@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        /* Light Mode */
+        --bg-app: #f1f5f9;
+        --bg-sidebar: #ffffff;
+        --bg-surface: #ffffff;
+        --border-color: #e2e8f0;
+        --text-primary: #0f172a;
+        --text-secondary: #64748b;
+    }
+
+    .dark {
+        /* Dark Mode */
+        --bg-app: #0f172a;
+        --bg-sidebar: #1e293b;
+        --bg-surface: #1e293b;
+        --border-color: #334155;
+        --text-primary: #f8fafc;
+        --text-secondary: #94a3b8;
+    }
+
+    body {
+        @apply bg-bg-app text-text-primary font-sans antialiased transition-colors duration-300;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.3);
+    }
+
+    .dark ::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.15);
+    }
+
+    .dark ::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.25);
+    }
+
+    /* Firefox scrollbar */
+    * {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+    }
+
+    .dark * {
+        scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+    }
+}

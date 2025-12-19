@@ -1,0 +1,3 @@
+python -m PyInstaller --noconfirm --onefile --console --name "backend" --clean --add-data "templates;templates" --hidden-import=uvicorn.logging --hidden-import=uvicorn.loops --hidden-import=uvicorn.loops.auto --hidden-import=uvicorn.protocols --hidden-import=uvicorn.protocols.http --hidden-import=uvicorn.protocols.http.auto --hidden-import=uvicorn.lifespan --hidden-import=uvicorn.lifespan.on --hidden-import=uvicorn.lifespan.off --paths="." server.py
+
+copy "c:\Users\QHanh\Desktop\INS_Automation_Platform\Backend\dist\backend.exe" "c:\Users\QHanh\Desktop\INS_Automation_Platform\INS_Automation_Platform\src-tauri\binaries\backend-x86_64-pc-windows-msvc.exe"
