@@ -6,7 +6,6 @@ const toolsData = {
         { id: 'build-model', name: 'Build model' },
         { id: 'setup-case', name: 'Setup case' },
         { id: 'auto-tuning', name: 'Auto tuning' },
-        { id: 'convert-simulink', name: 'Convert Simulink to PSCAD' },
         { id: 'generate-report', name: 'Generate report' },
     ],
     psse: [

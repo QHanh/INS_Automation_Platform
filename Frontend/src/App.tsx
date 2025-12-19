@@ -9,7 +9,6 @@ import CheckReactive from './pages/psse/CheckReactive';
 import PSSETuningTool from './pages/psse/TuningTool';
 import PSCADBuildModel from './pages/pscad/BuildModel';
 import PSCADCreateCases from './pages/pscad/CreateCases';
-import PSCADConvertSimulink from './pages/pscad/ConvertSimulink';
 import ETAPBuildModel from './pages/etap/BuildModel';
 import './index.css';
 
@@ -62,7 +61,6 @@ function App() {
           {/* PSCAD specific routes */}
           <Route path="pscad/build-model" element={<PSCADBuildModel />} />
           <Route path="pscad/setup-case" element={<PSCADCreateCases />} />
-          <Route path="pscad/convert-simulink" element={<PSCADConvertSimulink />} />
 
           {/* PSS/E specific routes */}
           <Route path="psse/build-model" element={<PSSEBuildModel />} />
