@@ -1,9 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import psse_route, pscad_route, etap_route
+from app.version import __version__, API_VERSION
 import uvicorn
 
-app = FastAPI(title="INS Automation Platform Backend")
+app = FastAPI(title="INS Automation Platform Backend", version=__version__)
 
 # Configure CORS
 app.add_middleware(
@@ -21,6 +22,14 @@ app.include_router(etap_route.router, prefix="/api/etap", tags=["etap"])
 @app.get("/")
 async def root():
     return {"message": "Welcome to INS Automation Platform Backend"}
+
+@app.get("/api/version")
+async def get_version():
+    """Get current backend version information"""
+    return {
+        "backend_version": __version__,
+        "api_version": API_VERSION
+    }
 
 if __name__ == "__main__":
     uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)

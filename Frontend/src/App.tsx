@@ -10,6 +10,7 @@ import PSSETuningTool from './pages/psse/TuningTool';
 import PSCADBuildModel from './pages/pscad/BuildModel';
 import PSCADCreateCases from './pages/pscad/CreateCases';
 import ETAPBuildModel from './pages/etap/BuildModel';
+import UpdateChecker from './components/UpdateChecker';
 import './index.css';
 
 function App() {
@@ -74,8 +75,12 @@ function App() {
           <Route path=":category/:toolId" element={<ToolPlaceholder />} />
         </Route>
       </Routes>
+
+      {/* Global Update Checker */}
+      <UpdateChecker />
     </BrowserRouter>
   );
 }
 
 export default App;
+

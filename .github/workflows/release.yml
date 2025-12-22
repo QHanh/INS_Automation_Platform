@@ -1,0 +1,148 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  # Build Python Backend
+  build-backend:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: |
+          cd Backend
+          pip install -r requirements.txt
+          pip install pyinstaller
+          
+      - name: Build backend executable
+        run: |
+          cd Backend
+          pyinstaller backend.spec
+          
+      - name: Upload backend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-exe
+          path: Backend/dist/backend.exe
+
+  # Build Tauri App
+  build-tauri:
+    needs: build-backend
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download backend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-exe
+          path: Frontend/src-tauri/binaries/
+          
+      - name: Rename backend for Tauri
+        run: |
+          Rename-Item -Path "Frontend/src-tauri/binaries/backend.exe" -NewName "backend-x86_64-pc-windows-msvc.exe"
+          
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          
+      - name: Install Rust stable
+        uses: dtolnay/rust-action@stable
+        
+      - name: Install frontend dependencies
+        run: |
+          cd Frontend
+          npm ci
+          
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          projectPath: Frontend
+          tagName: ${{ github.ref_name }}
+          releaseName: 'INS Automation Platform ${{ github.ref_name }}'
+          releaseBody: 'See the assets to download this version and install.'
+          releaseDraft: true
+          prerelease: false
+
+  # Generate update manifest
+  generate-manifest:
+    needs: build-tauri
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Get release info
+        id: release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = context.ref.replace('refs/tags/', '');
+            const release = await github.rest.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag: tag
+            });
+            
+            // Find the Windows NSIS zip and signature
+            const assets = release.data.assets;
+            const nsisZip = assets.find(a => a.name.includes('x64-setup.nsis.zip'));
+            const sigFile = assets.find(a => a.name.includes('x64-setup.nsis.zip.sig'));
+            
+            if (!nsisZip || !sigFile) {
+              core.setFailed('Could not find NSIS zip or signature file');
+              return;
+            }
+            
+            core.setOutput('version', tag.replace('v', ''));
+            core.setOutput('nsis_url', nsisZip.browser_download_url);
+            core.setOutput('upload_url', release.data.upload_url);
+            
+      - name: Download signature file
+        run: |
+          RELEASE_TAG="${{ github.ref_name }}"
+          gh release download $RELEASE_TAG --pattern "*x64-setup.nsis.zip.sig" --dir ./
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Create latest.json
+        run: |
+          SIGNATURE=$(cat *x64-setup.nsis.zip.sig)
+          VERSION="${{ steps.release.outputs.version }}"
+          NSIS_URL="${{ steps.release.outputs.nsis_url }}"
+          PUB_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          
+          cat > latest.json << EOF
+          {
+            "version": "${VERSION}",
+            "notes": "Release ${VERSION}",
+            "pub_date": "${PUB_DATE}",
+            "platforms": {
+              "windows-x86_64": {
+                "signature": "${SIGNATURE}",
+                "url": "${NSIS_URL}"
+              }
+            }
+          }
+          EOF
+          
+          cat latest.json
+          
+      - name: Upload latest.json to release
+        run: |
+          gh release upload ${{ github.ref_name }} latest.json --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
