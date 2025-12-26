@@ -79,7 +79,7 @@ class PSSETuningService:
                     self._log(f"Cannot change PG at bus {bus}, id={gen_id}")
 
         def get_p_poi():
-            psspy.fnsl([0,0,0,1,1,0,0,0])
+            psspy.fnsl([1,1,0,0,1,1,0,0])
             ierr, flow = psspy.brnflo(bus_from, bus_to, '1 ')
             if ierr != 0 or flow is None:
                 return 0.0
@@ -134,7 +134,7 @@ class PSSETuningService:
                 ierr = psspy.plant_chng_4(bus, NODE, [reg_bus[i], 0], [vs, 100.0])
 
         def get_q_poi():
-            psspy.fnsl([0,0,0,1,1,0,0,0])
+            psspy.fnsl([1,1,0,0,1,1,0,0])
             ierr, flow = psspy.brnflo(bus_from, bus_to, '1 ')
             if ierr != 0 or flow is None:
                 return 0.0

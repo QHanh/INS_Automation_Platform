@@ -24,6 +24,39 @@ export interface TuningRequest {
     q_target: number;
 }
 
+export interface MptItem {
+    mpt_type: "2-WINDING" | "3-WINDING";
+    mpt_from: number;
+    mpt_to: number;
+    mpt_bus_3?: number;
+}
+
+export interface ShuntItem {
+    BUS: number;
+    ID: string;
+}
+
+export interface ReportPointItem {
+    bess_id: string;
+    name: string;
+    bus_from: number;
+    bus_to: number;
+}
+
+export interface ReactiveCheckConfig {
+    SAV_PATH: string;
+    MPT_LIST: MptItem[];
+    SHUNT_LIST: ShuntItem[];
+    REG_BUS: number[];
+    GEN_BUSES: number[];
+    GEN_IDS: string[];
+    BUS_FROM: number;
+    BUS_TO: number;
+    P_NET: number;
+    LOG_PATH?: string;
+    REPORT_POINTS: ReportPointItem[];
+}
+
 export const psseApi = {
     async buildEquivalentModel(data: BuildModelRequest): Promise<ApiResponse> {
         try {
@@ -73,7 +106,7 @@ export const psseApi = {
         }
     },
 
-    async checkReactive(data: { file_path: string }): Promise<ApiResponse> {
+    async checkReactive(data: ReactiveCheckConfig): Promise<ApiResponse> {
         try {
             const response = await fetch(`${API_BASE_URL}/psse/check-reactive`, {
                 method: 'POST',

@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException
 import os
 from typing import Literal
-from app.schemas.psse_schema import BuildModelRequest, TuningRequest
+from app.schemas.psse_schema import BuildModelRequest, TuningRequest, ReactiveCheckConfig, RunCheckResponse
+from app.services import check_reactive_psse_service
 
 router = APIRouter()
 
@@ -100,3 +101,29 @@ async def tune_psse(mode: Literal["P", "Q", "PQ"], request: TuningRequest):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/check-reactive", response_model=RunCheckResponse)
+async def check_reactive(config: ReactiveCheckConfig):
+    """
+    Run ALL cases (Max Lag, 0.95 Lag, Max Lead, 0.95 Lead) sequentially.
+    """
+    logs = []
+    def log_callback(msg: str):
+        logs.append(msg)
+        print(msg) 
+
+    try:
+        cfg_dict = config.dict()
+        check_reactive_psse_service.run_check_logic(cfg_dict, "RUN_ALL", log_callback)
+        
+        return RunCheckResponse(
+            status="success",
+            message="Completed RUN_ALL sequence.",
+            log=logs
+        )
+    except Exception as e:
+        return RunCheckResponse(
+            status="error",
+            message=str(e),
+            log=logs
+        )

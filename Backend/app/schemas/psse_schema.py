@@ -16,3 +16,37 @@ class TuningRequest(BaseModel):
     reg_bus: List[int]
     p_target: float
     q_target: float
+
+class MptItem(BaseModel):
+    mpt_type: str = "2-WINDING"
+    mpt_from: int
+    mpt_to: int
+    mpt_bus_3: Optional[int] = 0
+
+class ShuntItem(BaseModel):
+    BUS: int
+    ID: str
+
+class ReportPointItem(BaseModel):
+    bess_id: str
+    name: str
+    bus_from: int
+    bus_to: int
+    
+class ReactiveCheckConfig(BaseModel):
+    SAV_PATH: str
+    MPT_LIST: List[MptItem]
+    SHUNT_LIST: List[ShuntItem] = []
+    REG_BUS: List[int]
+    GEN_BUSES: List[int]
+    GEN_IDS: List[str] = []
+    BUS_FROM: int = 0
+    BUS_TO: int = 0
+    P_NET: float = 0.0
+    LOG_PATH: Optional[str] = None
+    REPORT_POINTS: List[ReportPointItem]
+
+class RunCheckResponse(BaseModel):
+    status: str
+    message: str
+    log: List[str]
