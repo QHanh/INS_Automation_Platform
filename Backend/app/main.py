@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import psse_route, pscad_route, etap_route
+from app.routers import psse_route, pscad_route, etap_route, license_route
 from app.version import __version__, API_VERSION
 import uvicorn
 
@@ -18,6 +18,7 @@ app.add_middleware(
 app.include_router(psse_route.router, prefix="/api/psse", tags=["psse"])
 app.include_router(pscad_route.router, prefix="/api/pscad", tags=["pscad"])
 app.include_router(etap_route.router, prefix="/api/etap", tags=["etap"])
+app.include_router(license_route.router, prefix="/api/license", tags=["license"])
 
 @app.get("/")
 async def root():

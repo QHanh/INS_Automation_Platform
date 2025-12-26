@@ -9,3 +9,5 @@ langchain-core
 google-generativeai
 langchain-google-genai
 pandas
+pyjwt
+getmac

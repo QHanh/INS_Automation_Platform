@@ -11,6 +11,7 @@ import PSCADBuildModel from './pages/pscad/BuildModel';
 import PSCADCreateCases from './pages/pscad/CreateCases';
 import ETAPBuildModel from './pages/etap/BuildModel';
 import UpdateChecker from './components/UpdateChecker';
+import { LicenseGuard } from './components/LicenseGuard';
 import './index.css';
 
 function App() {
@@ -53,32 +54,34 @@ function App() {
   }
 
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Home />} />
-          <Route path=":category" element={<ToolCategory />} />
+    <LicenseGuard>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Layout />}>
+            <Route index element={<Home />} />
+            <Route path=":category" element={<ToolCategory />} />
 
-          {/* PSCAD specific routes */}
-          <Route path="pscad/build-model" element={<PSCADBuildModel />} />
-          <Route path="pscad/setup-case" element={<PSCADCreateCases />} />
+            {/* PSCAD specific routes */}
+            <Route path="pscad/build-model" element={<PSCADBuildModel />} />
+            <Route path="pscad/setup-case" element={<PSCADCreateCases />} />
 
-          {/* PSS/E specific routes */}
-          <Route path="psse/build-model" element={<PSSEBuildModel />} />
-          <Route path="psse/check-reactive" element={<CheckReactive />} />
-          <Route path="psse/tuning-tool" element={<PSSETuningTool />} />
+            {/* PSS/E specific routes */}
+            <Route path="psse/build-model" element={<PSSEBuildModel />} />
+            <Route path="psse/check-reactive" element={<CheckReactive />} />
+            <Route path="psse/tuning-tool" element={<PSSETuningTool />} />
 
-          {/* ETAP specific routes */}
-          <Route path="etap/build-model" element={<ETAPBuildModel />} />
+            {/* ETAP specific routes */}
+            <Route path="etap/build-model" element={<ETAPBuildModel />} />
 
-          {/* Generic tool route */}
-          <Route path=":category/:toolId" element={<ToolPlaceholder />} />
-        </Route>
-      </Routes>
+            {/* Generic tool route */}
+            <Route path=":category/:toolId" element={<ToolPlaceholder />} />
+          </Route>
+        </Routes>
 
-      {/* Global Update Checker */}
-      <UpdateChecker />
-    </BrowserRouter>
+        {/* Global Update Checker */}
+        <UpdateChecker />
+      </BrowserRouter>
+    </LicenseGuard>
   );
 }
 
