@@ -251,11 +251,11 @@ export default function CheckReactive() {
                                 <input type="number" step="0.1" value={pNet} onChange={e => setPNet(parseFloat(e.target.value) || 0)} className={inputClass} />
                             </div>
                             <div className="space-y-2">
-                                <label className={labelClass}>Bus From (0.95)</label>
+                                <label className={labelClass}>Bus From (For 0.95)</label>
                                 <input type="number" value={busFrom} onChange={e => setBusFrom(parseInt(e.target.value) || 0)} className={inputClass} />
                             </div>
                             <div className="space-y-2">
-                                <label className={labelClass}>Bus To (0.95)</label>
+                                <label className={labelClass}>Bus To (For 0.95)</label>
                                 <input type="number" value={busTo} onChange={e => setBusTo(parseInt(e.target.value) || 0)} className={inputClass} />
                             </div>
                         </div>
@@ -306,7 +306,7 @@ export default function CheckReactive() {
                                     <button onClick={() => removeMpt(idx)} className="absolute top-2 right-2 text-red-400 hover:text-red-300"><Trash2 size={16} /></button>
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2">
                                         <div className="space-y-1">
-                                            <label className="text-xs text-text-secondary block">Type</label>
+                                            <label className="text-xs text-text-secondary block">MPT Type</label>
                                             <select value={mpt.mpt_type} onChange={e => updateMpt(idx, 'mpt_type', e.target.value)} className={inputClass}>
                                                 <option value="2-WINDING">2-Winding</option>
                                                 <option value="3-WINDING">3-Winding</option>
