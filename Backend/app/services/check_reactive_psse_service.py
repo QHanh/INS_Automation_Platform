@@ -197,35 +197,73 @@ def tune_vsched_for_target_q(psspy, log_cb, cfg, q_target, v_min=0.9, v_max=1.1)
 
 # --- MEASURE & REPORT ---
 
-def measure_points(psspy, report_points):
+def measure_points(psspy, report_points, cfg=None):
     """Do 5 diem P, Q, S, PF"""
     results = []
     
     points = report_points if isinstance(report_points, list) else []
     
+    # helper to find gen id
+    gen_buses = cfg.get("GEN_BUSES", []) if cfg else []
+    gen_ids = cfg.get("GEN_IDS", []) if cfg else []
+
     for pt in points:
         if hasattr(pt, 'dict'): pt = pt.dict()
         
         f = pt.get("bus_from")
         t = pt.get("bus_to")
         c = "1"
-        
-        ierr, flow = psspy.brnflo(f, t, c)
+        pt_name = pt.get("name", "")
+        bess_id = pt.get("bess_id", "")
+
         p = 0.0
         q = 0.0
-        if ierr == 0 and flow:
-            if isinstance(flow, complex):
-                p, q = flow.real, flow.imag
-            elif len(flow) > 0:
-                val = flow[0]
-                p, q = (val.real, val.imag) if isinstance(val, complex) else (val, 0)
+
+        if pt_name == "Unit at Gen Term":
+            gid = "1"
+            found_by_bus = False
+            
+            if f in gen_buses:
+                try:
+                    indices = [i for i, x in enumerate(gen_buses) if x == f]
+                    if indices:
+                        idx = indices[0]
+                        if idx < len(gen_ids):
+                            gid = gen_ids[idx]
+                            found_by_bus = True
+                except:
+                    pass
+            
+            if not found_by_bus and bess_id.startswith("GEN "):
+                try:
+                    idx = int(bess_id.replace("GEN ", "")) - 1
+                    if 0 <= idx < len(gen_ids):
+                        gid = gen_ids[idx]
+                except:
+                    pass
+
+            ierr_p, p_val = psspy.macdat(f, gid, 'P')
+            ierr_q, q_val = psspy.macdat(f, gid, 'Q')
+            
+            if ierr_p == 0: p = p_val
+            if ierr_q == 0: q = q_val
+            
+        else:
+            # Standard branch flow
+            ierr, flow = psspy.brnflo(f, t, c)
+            if ierr == 0 and flow:
+                if isinstance(flow, complex):
+                    p, q = flow.real, flow.imag
+                elif len(flow) > 0:
+                    val = flow[0]
+                    p, q = (val.real, val.imag) if isinstance(val, complex) else (val, 0)
         
         s = math.sqrt(p**2 + q**2)
         pf = p/s if s > 1e-6 else 0.0
         
         results.append({
-            "bess_id": pt.get("bess_id"),
-            "name": pt.get("name"),
+            "bess_id": bess_id,
+            "name": pt_name,
             "P": p, "Q": q, "S": s, "pf": pf
         })
     return results
@@ -265,7 +303,7 @@ def export_to_excel(cfg, data_map):
         for idx in sorted_idxs:
             # Block 1
             r, c = start_row, 1
-            title1 = f"{cases[0]} BESS {idx}"
+            title1 = f"{cases[0]} {idx}"
             ws.merge_range(r, c, r, c+4, title1, header_fmt)
             r += 1
             
@@ -285,7 +323,7 @@ def export_to_excel(cfg, data_map):
             
             # Block 2
             c2 = 10
-            title2 = f"{cases[1]} BESS {idx}"
+            title2 = f"{cases[1]} {idx}"
             ws.merge_range(start_row, c2, start_row, c2+4, title2, header_fmt)
             items2 = bess_groups_2.get(idx, [])
             headers2 = [i["name"] for i in items2]
@@ -564,7 +602,7 @@ def check_095_leading(psspy, log_cb, cfg, _i, _f):
     disconnect_shunts(psspy, SHUNT_LIST, log_cb, _i, _f)
     q_now, vsched_final = tune_vsched_for_target_q(psspy, log_cb, cfg, q_095_leading, v_min=0.9, v_max=1.1)
 
-    v_passed, violating = check_bus_voltages(psspy, log_cb, 1.1, "lead")
+    v_passed, violating = check_bus_voltages(psspy, log_cb, 0.9, "lead")
     
     if abs(q_now - q_095_leading) < 1e-2 and v_passed:
         log_cb(f"✅ Achieved immediately: Q={q_now:.2f} <= {q_095_leading:.2f} and Voltages OK.")
@@ -622,7 +660,7 @@ def run_all_cases(psspy, log_cb, cfg, _i, _f):
     log_cb("=== RUNNING MAX LAG ===")
     psspy.case(sav_path)
     check_max_lag(psspy, log_cb, cfg, _i, _f)
-    res_max_lag = measure_points(psspy, cfg.get("REPORT_POINTS", []))
+    res_max_lag = measure_points(psspy, cfg.get("REPORT_POINTS", []), cfg)
     path_max_lag = f"{base_name}_MaxLag.sav"
     psspy.save(path_max_lag)
     log_cb(f"💾 Saved Max Lag case: {path_max_lag}")
@@ -630,7 +668,7 @@ def run_all_cases(psspy, log_cb, cfg, _i, _f):
     log_cb("=== RUNNING 0.95 LAGGING ===")
     psspy.case(sav_path)
     check_095_lagging(psspy, log_cb, cfg, _i, _f)
-    res_095_lag = measure_points(psspy, cfg.get("REPORT_POINTS", []))
+    res_095_lag = measure_points(psspy, cfg.get("REPORT_POINTS", []), cfg)
     path_095_lag = f"{base_name}_095Lag.sav"
     psspy.save(path_095_lag)
     log_cb(f"💾 Saved 0.95 Lag case: {path_095_lag}")
@@ -638,7 +676,7 @@ def run_all_cases(psspy, log_cb, cfg, _i, _f):
     log_cb("=== RUNNING MAX LEAD ===")
     psspy.case(sav_path)
     check_max_lead(psspy, log_cb, cfg, _i, _f)
-    res_max_lead = measure_points(psspy, cfg.get("REPORT_POINTS", []))
+    res_max_lead = measure_points(psspy, cfg.get("REPORT_POINTS", []), cfg)
     path_max_lead = f"{base_name}_MaxLead.sav"
     psspy.save(path_max_lead)
     log_cb(f"💾 Saved Max Lead case: {path_max_lead}")
@@ -646,7 +684,7 @@ def run_all_cases(psspy, log_cb, cfg, _i, _f):
     log_cb("=== RUNNING 0.95 LEADING ===")
     psspy.case(sav_path)
     check_095_leading(psspy, log_cb, cfg, _i, _f)
-    res_095_lead = measure_points(psspy, cfg.get("REPORT_POINTS", []))
+    res_095_lead = measure_points(psspy, cfg.get("REPORT_POINTS", []), cfg)
     path_095_lead = f"{base_name}_095Lead.sav"
     psspy.save(path_095_lead)
     log_cb(f"💾 Saved 0.95 Lead case: {path_095_lead}")
