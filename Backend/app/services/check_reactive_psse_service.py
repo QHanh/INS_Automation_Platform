@@ -688,7 +688,7 @@ def run_all_cases(psspy, log_cb, cfg, _i, _f):
     path_max_lag = f"{base_name}_MaxLag.sav"
     psspy.save(path_max_lag)
     log_cb(f"💾 Saved Max Lag case: {path_max_lag}")
-    export_diagram_image(psspy, path_max_lag, log_cb)
+    export_diagram_image(psspy, base_name, log_cb)
     
     log_cb("=== RUNNING 0.95 LAGGING ===")
     psspy.case(sav_path)
@@ -697,7 +697,7 @@ def run_all_cases(psspy, log_cb, cfg, _i, _f):
     path_095_lag = f"{base_name}_095Lag.sav"
     psspy.save(path_095_lag)
     log_cb(f"💾 Saved 0.95 Lag case: {path_095_lag}")
-    export_diagram_image(psspy, path_095_lag, log_cb)
+    export_diagram_image(psspy, base_name, log_cb)
 
     log_cb("=== RUNNING MAX LEAD ===")
     psspy.case(sav_path)
@@ -706,7 +706,7 @@ def run_all_cases(psspy, log_cb, cfg, _i, _f):
     path_max_lead = f"{base_name}_MaxLead.sav"
     psspy.save(path_max_lead)
     log_cb(f"💾 Saved Max Lead case: {path_max_lead}")
-    export_diagram_image(psspy, path_max_lead, log_cb)
+    export_diagram_image(psspy, base_name, log_cb)
 
     log_cb("=== RUNNING 0.95 LEADING ===")
     psspy.case(sav_path)
@@ -715,7 +715,7 @@ def run_all_cases(psspy, log_cb, cfg, _i, _f):
     path_095_lead = f"{base_name}_095Lead.sav"
     psspy.save(path_095_lead)
     log_cb(f"💾 Saved 0.95 Lead case: {path_095_lead}")
-    export_diagram_image(psspy, path_095_lead, log_cb)
+    export_diagram_image(psspy, base_name, log_cb)
 
     log_cb("📊 Exporting Excel Report...")
     data_map = {
