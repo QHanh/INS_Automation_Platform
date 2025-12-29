@@ -26,6 +26,30 @@ except ImportError:
 NODE = 0
 # --- HELPER FUNCTIONS ---
 
+def export_diagram_image(psspy, sav_path, log_cb, image_type=3, quality=100):
+    """Export diagram image with same name as .sav file but .png extension"""
+    try:
+        # Generate image path from sav path
+        image_path = os.path.splitext(sav_path)[0] + ".png"
+        
+        # Set full view to capture entire diagram
+        try:
+            psspy.setfullviewscale()
+        except:
+            pass
+        
+        ierr = psspy.exportimagefile(image_type, image_path, quality)
+        
+        if os.path.exists(image_path):
+            log_cb(f"📸 Exported image: {image_path}")
+            return True
+        else:
+            log_cb(f"⚠️ Failed to export image: {image_path}")
+            return False
+    except Exception as e:
+        log_cb(f"⚠️ Error exporting image: {e}")
+        return False
+
 def get_mpt_data(psspy, mpt, log_cb):
     """Lấy thông tin tap của một MPT"""
     mpt_type = mpt.get("mpt_type", "2-WINDING")
@@ -664,6 +688,7 @@ def run_all_cases(psspy, log_cb, cfg, _i, _f):
     path_max_lag = f"{base_name}_MaxLag.sav"
     psspy.save(path_max_lag)
     log_cb(f"💾 Saved Max Lag case: {path_max_lag}")
+    export_diagram_image(psspy, path_max_lag, log_cb)
     
     log_cb("=== RUNNING 0.95 LAGGING ===")
     psspy.case(sav_path)
@@ -672,6 +697,7 @@ def run_all_cases(psspy, log_cb, cfg, _i, _f):
     path_095_lag = f"{base_name}_095Lag.sav"
     psspy.save(path_095_lag)
     log_cb(f"💾 Saved 0.95 Lag case: {path_095_lag}")
+    export_diagram_image(psspy, path_095_lag, log_cb)
 
     log_cb("=== RUNNING MAX LEAD ===")
     psspy.case(sav_path)
@@ -680,6 +706,7 @@ def run_all_cases(psspy, log_cb, cfg, _i, _f):
     path_max_lead = f"{base_name}_MaxLead.sav"
     psspy.save(path_max_lead)
     log_cb(f"💾 Saved Max Lead case: {path_max_lead}")
+    export_diagram_image(psspy, path_max_lead, log_cb)
 
     log_cb("=== RUNNING 0.95 LEADING ===")
     psspy.case(sav_path)
@@ -688,6 +715,7 @@ def run_all_cases(psspy, log_cb, cfg, _i, _f):
     path_095_lead = f"{base_name}_095Lead.sav"
     psspy.save(path_095_lead)
     log_cb(f"💾 Saved 0.95 Lead case: {path_095_lead}")
+    export_diagram_image(psspy, path_095_lead, log_cb)
 
     log_cb("📊 Exporting Excel Report...")
     data_map = {

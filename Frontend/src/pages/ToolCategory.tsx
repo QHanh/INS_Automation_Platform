@@ -12,7 +12,7 @@ const toolsData = {
         { id: 'build-model', name: 'Build model' },
         { id: 'check-reactive', name: 'Check reactive' },
         { id: 'tuning-tool', name: 'Tuning P/Q' },
-        { id: 'dmview', name: 'DM View' },
+        { id: 'dmview', name: 'DMView' },
         { id: 'setup-case', name: 'Setup case' },
         { id: 'auto-tuning-dynamic', name: 'Auto tuning dynamic' },
         { id: 'generate-report', name: 'Generate report' },
