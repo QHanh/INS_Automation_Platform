@@ -10,6 +10,7 @@ const toolsData = {
     ],
     psse: [
         { id: 'build-model', name: 'Build model' },
+        { id: 'basic-model', name: 'Basic model' },
         { id: 'check-reactive', name: 'Check reactive' },
         { id: 'tuning-tool', name: 'Tuning P/Q' },
         { id: 'dmview', name: 'DMView' },

@@ -12,6 +12,7 @@ import PSCADCreateCases from './pages/pscad/CreateCases';
 import ETAPBuildModel from './pages/etap/BuildModel';
 import UpdateChecker from './components/UpdateChecker';
 import { LicenseGuard } from './components/LicenseGuard';
+import BasicModel from './pages/psse/BasicModel';
 import './index.css';
 
 function App() {
@@ -67,6 +68,7 @@ function App() {
 
             {/* PSS/E specific routes */}
             <Route path="psse/build-model" element={<PSSEBuildModel />} />
+            <Route path="psse/basic-model" element={<BasicModel />} />
             <Route path="psse/check-reactive" element={<CheckReactive />} />
             <Route path="psse/tuning-tool" element={<PSSETuningTool />} />
 
