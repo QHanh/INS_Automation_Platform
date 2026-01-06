@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 import os
 from typing import Literal
-from app.schemas.psse_schema import BuildModelRequest, TuningRequest, ReactiveCheckConfig, RunCheckResponse
+from app.schemas.psse_schema import BuildModelRequest, TuningRequest, ReactiveCheckConfig, RunCheckResponse, BasicModelRequest
 
 router = APIRouter()
 
@@ -100,6 +100,31 @@ async def tune_psse(mode: Literal["P", "Q", "PQ"], request: TuningRequest):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/basic-model")
+async def create_basic_model(request: BasicModelRequest):
+    """
+    Generate Basic Model SAV files (Charge/Discharge etc.)
+    """
+    def log_cb(msg):
+        print(f"[BasicModel] {msg}")
+    
+    from app.services.basic_model_psse_service import BasicModelService
+    service = BasicModelService(log_cb=log_cb)
+    
+    cfg = request.dict()
+    
+    # Check project type
+    if request.project_type == "BESS":
+        success = service.run_bess_alone(cfg)
+    else:
+        # Placeholder for other types
+        return {"success": False, "message": f"Project type {request.project_type} not implemented yet."}
+        
+    if success:
+         return {"success": True, "message": "Basic Model generation completed."}
+    else:
+         return {"success": False, "message": "Failed to generate Basic Model. Check logs."}
 
 @router.post("/check-reactive", response_model=RunCheckResponse)
 async def check_reactive(config: ReactiveCheckConfig):

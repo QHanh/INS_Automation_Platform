@@ -50,3 +50,19 @@ class RunCheckResponse(BaseModel):
     status: str
     message: str
     log: List[str]
+
+class GeneratorGroup(BaseModel):
+    buses: List[int]
+    ids: List[str]
+    reg_buses: List[int] = []
+
+class BasicModelRequest(BaseModel):
+    sav_path: str
+    project_type: str = "BESS" # BESS, PV, HYBRID
+    bus_from: int
+    bus_to: int
+    p_net: float
+    q_target: float = 0.0
+    bess_generators: Optional[GeneratorGroup] = None
+    pv_generators: Optional[GeneratorGroup] = None
+    log_path: Optional[str] = None

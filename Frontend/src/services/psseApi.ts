@@ -57,6 +57,28 @@ export interface ReactiveCheckConfig {
     REPORT_POINTS: ReportPointItem[];
 }
 
+export interface GeneratorGroup {
+    buses: number[];
+    ids: string[];
+    reg_buses: number[];
+}
+
+export interface BasicModelRequest {
+    sav_path: string;
+    project_type: string;
+    bus_from: number;
+    bus_to: number;
+    p_net: number;
+    q_target?: number;
+    bess_generators?: GeneratorGroup;
+    pv_generators?: GeneratorGroup;
+    log_path?: string;
+}
+
+export interface BasicModelResponse {
+    message: string;
+}
+
 export const psseApi = {
     async buildEquivalentModel(data: BuildModelRequest): Promise<ApiResponse> {
         try {
@@ -83,6 +105,7 @@ export const psseApi = {
     },
 
     async buildDetailedModel(data: BuildModelRequest): Promise<ApiResponse> {
+        // ... (start of existing object)
         try {
             const response = await fetch(`${API_BASE_URL}/psse/build-detailed-model`, {
                 method: 'POST',
@@ -133,6 +156,30 @@ export const psseApi = {
     async tuneModel(mode: 'P' | 'Q' | 'PQ', data: TuningRequest): Promise<ApiResponse> {
         try {
             const response = await fetch(`${API_BASE_URL}/psse/tune/${mode}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            return { success: true, data: result };
+        } catch (error) {
+            return {
+                success: false,
+                error: error instanceof Error ? error.message : 'Unknown error occurred',
+            };
+        }
+    },
+
+    async createBasicModel(data: BasicModelRequest): Promise<ApiResponse<BasicModelResponse>> {
+        try {
+            const response = await fetch(`${API_BASE_URL}/psse/basic-model`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
