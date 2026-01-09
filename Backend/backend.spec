@@ -3,10 +3,10 @@
 
 a = Analysis(
     ['server.py'],
-    pathex=['.'],
+    pathex=['.', 'TOOLs'],
     binaries=[],
-    datas=[('templates', 'templates')],
-    hiddenimports=['uvicorn.logging', 'uvicorn.loops', 'uvicorn.loops.auto', 'uvicorn.protocols', 'uvicorn.protocols.http', 'uvicorn.protocols.http.auto', 'uvicorn.lifespan', 'uvicorn.lifespan.on', 'uvicorn.lifespan.off'],
+    datas=[('templates', 'templates'), ('app/services/build_model_libs', 'app/services/build_model_libs'), ('TOOLs', 'TOOLs')],
+    hiddenimports=['uvicorn.logging', 'uvicorn.loops', 'uvicorn.loops.auto', 'uvicorn.protocols', 'uvicorn.protocols.http', 'uvicorn.protocols.http.auto', 'uvicorn.lifespan', 'uvicorn.lifespan.on', 'uvicorn.lifespan.off', 'PSSE_Model', 'PSSE_Model_Detail', 'PSCAD_Model', 'Data', 'component', 'TOOLs.mhi', 'TOOLs.mhi.pscad'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

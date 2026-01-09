@@ -6,9 +6,15 @@ LIBS_PATH = os.path.join(os.path.dirname(__file__), "build_model_libs")
 if LIBS_PATH not in sys.path:
     sys.path.append(LIBS_PATH)
 
+# Add TOOLs path for PSCAD_Model.pyd dependencies (like mhi.pscad)
+TOOLS_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "TOOLs"))
+if TOOLS_PATH not in sys.path:
+    sys.path.append(TOOLS_PATH)
+
 try:
     import PSCAD_Model
 except ImportError as e:
+    PSCAD_Model = None
     print(f"Error importing PSCAD model: {e}")
 
 class PscadBuildService:
@@ -38,6 +44,8 @@ class PscadBuildService:
              os.chdir(os.path.dirname(excel_path))
              
              try:
+                 if PSCAD_Model is None:
+                     raise ImportError("PSCAD_Model could not be imported. Please check dependencies.")
                  # PSCAD_Model.PSCAD_Model(excel_path).main(template_path)
                  instance = PSCAD_Model.PSCAD_Model(excel_path)
                  instance.main(template_path)

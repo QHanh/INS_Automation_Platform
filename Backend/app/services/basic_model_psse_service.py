@@ -96,6 +96,13 @@ class BasicModelService:
         if not ok_q:
             self._log("Error tuning Q for Discharge.")
             return False
+        
+        # Re-tune P after Q adjustment
+        self._log("--- Re-tuning P for Discharge ---")
+        ok_p2 = tuner.tune_p(bus_from, bus_to, buses, ids, p_net)
+        if not ok_p2:
+            self._log("Error re-tuning P for Discharge.")
+            return False
 
         # Store Pmax and Vsched for Discharge
         pmax_map = {}
@@ -119,6 +126,13 @@ class BasicModelService:
         ok_q_charge = tuner.tune_q(bus_from, bus_to, buses, reg_buses, q_target)
         if not ok_q_charge:
             self._log("Error tuning Q for Charge.")
+            return False
+        
+        # Re-tune P after Q adjustment
+        self._log("--- Re-tuning P for Charge ---")
+        ok_p_charge2 = tuner.tune_p(bus_from, bus_to, buses, ids, p_charge)
+        if not ok_p_charge2:
+            self._log("Error re-tuning P for Charge.")
             return False
         
         # Store Pmin and Vsched for Charge
