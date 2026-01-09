@@ -11,20 +11,18 @@ async def build_model(request: BuildModelRequest):
         raise HTTPException(status_code=400, detail=f"File not found: {request.file_path}")
     
     try:
-        from app.services.build_model_psse_services.equivalent_psse_service import EquivalentPSSEService
-        service = EquivalentPSSEService(request.file_path, request.output_path)
+        from app.services.psse_build_service import PsseBuildService
+        service = PsseBuildService()
+        result = service.build_equivalent_model(request.file_path)
         
-        # Single call orchestration matching PSSE.py logic
-        result = service.run_build_model()
-        
-        if "error" in str(result).lower() and "success" not in str(result).lower():
-             raise HTTPException(status_code=500, detail=f"Model Generation Failed: {result}")
+        if not result["success"]:
+             raise HTTPException(status_code=500, detail=result["message"])
 
-        # Determine output folder similarly to how service does if not provided
-        output_folder = request.output_path if request.output_path else os.path.dirname(request.file_path)
+        # Determine output folder (assumed to be same as input file dir for now)
+        output_folder = os.path.dirname(request.file_path)
         
         return {
-            "message": "Model built successfully",
+            "message": result["message"],
             "file_path": request.file_path,
             "output_folder": output_folder,
             "sld_file": os.path.join(output_folder, "project.sld"),
@@ -41,10 +39,9 @@ async def build_detailed_model(request: BuildModelRequest):
         raise HTTPException(status_code=400, detail=f"File not found: {request.file_path}")
     
     try:
-        from app.services.build_model_psse_services.detailed_psse_service import DetailedPSSEService
-        service = DetailedPSSEService(request.file_path, request.output_path)
-        
-        result = service.build_detailed_model()
+        from app.services.psse_build_service import PsseBuildService
+        service = PsseBuildService()
+        result = service.build_detailed_model(request.file_path)
         
         if not result["success"]:
             raise HTTPException(status_code=500, detail=result["message"])
@@ -52,9 +49,7 @@ async def build_detailed_model(request: BuildModelRequest):
         return {
             "message": result["message"],
             "input_file_path": request.file_path,
-            "output_folder": service.output_path,
-            "raw_file": result["raw_file"],
-            "seq_file": result["seq_file"]
+            "output_folder": os.path.dirname(request.file_path)
         }
         
     except Exception as e:

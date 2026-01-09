@@ -3,7 +3,6 @@ from typing import Optional, List, Dict, Any
 
 class BuildPSCADModelRequest(BaseModel):
     file_path: str
-    output_path: Optional[str] = None
 
 class PSCADComponent(BaseModel):
     id: int

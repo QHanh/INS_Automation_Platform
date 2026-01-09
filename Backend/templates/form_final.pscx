@@ -24,7 +24,7 @@
     <param name="Check" value="0" />
     <param name="Debug" value="0" />
     <param name="description" value="" />
-    <param name="revisor" value="admin, 1751451206" />
+    <param name="revisor" value="admin, 1766653231" />
   </paramlist>
   <Layers />
   <List classid="Settings">
@@ -8453,7 +8453,7 @@ from wye-delta transformers)]]></segment>
         </Gfx>
       </graphics>
     </Definition>
-    <Definition classid="UserCmpDefn" name="IBR_Name" group="" url="" version="" build="" instances="1" view="false" date="1738304926" id="507817668" crc="108202116">
+    <Definition classid="UserCmpDefn" name="IBR_Name" group="" url="" version="" build="" instances="1" view="false" date="1738304926" id="507817668" crc="1178872">
       <paramlist>
         <param name="Description" value="Project Name Description" />
         <param name="Name" value="G_904014_0_G1" />
@@ -8582,7 +8582,7 @@ from wye-delta transformers)]]></segment>
 Power and Trip Codes]]></Sticky>
         <paramlist>
           <param name="show_grid" value="1" />
-          <param name="size" value="4" />
+          <param name="size" value="5" />
           <param name="orient" value="1" />
           <param name="show_border" value="0" />
           <param name="monitor_bus_voltage" value="0" />
@@ -10172,14 +10172,9 @@ Power and Trip Codes]]></Sticky>
   </definitions>
   <List classid="Resource" />
   <hierarchy>
-    <call link="1044972181" name="form_final:DS" z="-1" view="false" instance="0">
-      <call link="223992969" name="form_final:Main" z="-1" view="true" instance="0">
-        <call link="1697635681" name="ERCOTLibs:SOURCE2" z="-1" view="false" instance="0">
-          <call link="311614416" name="ERCOTLibs:SCR" z="90" view="false" instance="0" />
-          <call link="1308061507" name="ERCOTLibs:V_Test" z="230" view="false" instance="0" />
-          <call link="689864802" name="ERCOTLibs:Transient_Volt" z="240" view="false" instance="0" />
-        </call>
-        <call link="1105124229" name="form_final:IBR_Name" z="10" view="false" instance="0" />
+    <call link="414263640" name="form_final:DS" z="-1" view="false" instance="0">
+      <call link="223992969" name="form_final:Main" z="-1" view="false" instance="0">
+        <call link="1105124229" name="form_final:IBR_Name" z="10" view="true" instance="0" />
       </call>
     </call>
   </hierarchy>

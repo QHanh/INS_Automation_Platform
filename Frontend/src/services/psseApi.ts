@@ -3,7 +3,6 @@ const API_BASE_URL = 'http://localhost:8123/api';
 
 export interface BuildModelRequest {
     file_path: string;
-    output_path: string;
 }
 
 export interface ApiResponse<T = unknown> {

@@ -10,12 +10,12 @@ async def build_equivalent_model(request: BuildPSCADModelRequest):
         raise HTTPException(status_code=400, detail=f"File not found: {request.file_path}")
     
     try:
-        from app.services.build_model_pscad_services.equivalent_pscad_service import PSCADService
-        service = PSCADService(request.file_path, request.output_path)
-        result = service.build_equivalent_model()
+        from app.services.pscad_build_service import PscadBuildService
+        service = PscadBuildService()
+        result = service.build_equivalent_model(request.file_path)
         
-        if "error" in result:
-             raise HTTPException(status_code=500, detail=result["error"])
+        if not result["success"]:
+             raise HTTPException(status_code=500, detail=result["message"])
              
         return result
         

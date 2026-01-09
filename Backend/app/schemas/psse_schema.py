@@ -3,8 +3,6 @@ from typing import Optional, List
 
 class BuildModelRequest(BaseModel):
     file_path: str
-    output_path: Optional[str] = None
-
 
 class TuningRequest(BaseModel):
     sav_path: str

@@ -3,7 +3,7 @@ import BackButton from '../../components/BackButton';
 import { useFileDialog } from '../../hooks/useFileDialog';
 import { psseApi } from '../../services/psseApi';
 import type { BuildModelRequest } from '../../services/psseApi';
-import { FolderOpen, File, Loader2 } from 'lucide-react';
+import { File, Loader2 } from 'lucide-react';
 
 interface LogDetails {
     sld_file?: string;
@@ -25,7 +25,6 @@ const LOGS_STORAGE_KEY = 'psse-logs';
 
 export default function PSSEBuildModel() {
     const [filePath, setFilePath] = useState('');
-    const [outputPath, setOutputPath] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [logs, setLogs] = useState<LogEntry[]>(() => {
         try {
@@ -40,7 +39,7 @@ export default function PSSEBuildModel() {
         sessionStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(logs));
     }, [logs]);
 
-    const { selectFile, selectFolder } = useFileDialog();
+    const { selectFile } = useFileDialog();
 
     const breadcrumb = 'PSS/E Tools / Build Model';
 
@@ -55,13 +54,6 @@ export default function PSSEBuildModel() {
         }
     };
 
-    const handleSelectFolder = async () => {
-        const selected = await selectFolder();
-        if (selected) {
-            setOutputPath(selected);
-        }
-    };
-
     const handleGenerate = async (type: 'equivalent' | 'detailed') => {
         if (!filePath) {
             const timestamp = new Date().toLocaleTimeString();
@@ -72,8 +64,7 @@ export default function PSSEBuildModel() {
         setIsLoading(true);
 
         const requestData: BuildModelRequest = {
-            file_path: filePath,
-            output_path: outputPath,
+            file_path: filePath
         };
 
         const result = type === 'equivalent'
@@ -132,33 +123,6 @@ export default function PSSEBuildModel() {
                                 title="Browse for file"
                             >
                                 <File size={18} />
-                                Browse
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Output Path Input */}
-                    <div className="space-y-2">
-                        <label className="block text-sm font-medium text-text-primary">
-                            Output Path <span className="text-text-secondary font-normal">(Optional)</span>
-                        </label>
-                        <div className="flex gap-2">
-                            <input
-                                type="text"
-                                value={outputPath}
-                                onChange={(e) => setOutputPath(e.target.value)}
-                                placeholder="Select or enter output folder path..."
-                                className="flex-1 px-4 py-2 bg-bg-surface border border-border-color rounded-lg 
-                  text-text-primary placeholder-text-secondary
-                  focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                            <button
-                                onClick={handleSelectFolder}
-                                className="px-4 py-2 bg-bg-surface hover:bg-white/10 border border-border-color 
-                  rounded-lg transition-colors flex items-center gap-2"
-                                title="Browse for folder"
-                            >
-                                <FolderOpen size={18} />
                                 Browse
                             </button>
                         </div>
