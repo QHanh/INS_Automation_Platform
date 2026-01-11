@@ -1,4 +1,5 @@
 import os
+import math
 from typing import Dict, List
 from app.services.tuning_psse_service import PSSETuningService
 
@@ -67,9 +68,17 @@ class BasicModelService:
             ierr, vs = self.psspy.busdat(bus, 'PU')
             return vs if ierr == 0 else 1.0
 
-        def set_gen(bus, gid, pgen, pmax, pmin):
+        def get_mbase(bus, gid):
+            ierr, mbase = self.psspy.macdat(bus, gid, 'MBASE')
+            return mbase if ierr == 0 else 100.0
+
+        def set_gen(bus, gid, pgen, pmax, pmin, qmax=None, qmin=None):
             vals = [self._f] * 17
             vals[0] = pgen
+            if qmax is not None:
+                vals[2] = qmax
+            if qmin is not None:
+                vals[3] = qmin
             vals[4] = pmax
             vals[5] = pmin
             self.psspy.machine_chng_4(bus, gid, [self._i]*7, vals, "")
@@ -113,6 +122,23 @@ class BasicModelService:
             vsched_discharge[bus] = get_vsched(bus)
             self._log(f"Gen {bus}-{gid}: Pmax = {pmax_map[(bus, gid)]:.4f}, Vsched = {vsched_discharge[bus]:.4f}")
 
+        # Calculate Qmax and Qmin based on Mbase and Pmax
+        # Formula: Qmax = sqrt(Mbase^2 - Pmax^2), Qmin = -Qmax
+        qmax_map = {}
+        qmin_map = {}
+        for i, bus in enumerate(buses):
+            gid = ids[i]
+            mbase = get_mbase(bus, gid)
+            pmax = abs(pmax_map[(bus, gid)])
+            if mbase >= pmax:
+                qmax = math.sqrt(mbase**2 - pmax**2)
+            else:
+                qmax = 0.0
+                self._log(f"Warning: Mbase ({mbase:.2f}) < Pmax ({pmax:.2f}) for Gen {bus}-{gid}")
+            qmax_map[(bus, gid)] = qmax
+            qmin_map[(bus, gid)] = -qmax
+            self._log(f"Gen {bus}-{gid}: Mbase = {mbase:.2f}, Qmax = {qmax:.4f}, Qmin = {-qmax:.4f}")
+
         # ========== CHARGE ==========
         self._log("--- Tuning for Charge (P = -P_net) ---")
         p_charge = -1.0 * p_net
@@ -152,7 +178,9 @@ class BasicModelService:
             gid = ids[i]
             pmax = pmax_map[(bus, gid)]
             pmin = pmin_map[(bus, gid)]
-            set_gen(bus, gid, pmin, pmax, pmin)  # Pgen = Pmin
+            qmax = qmax_map[(bus, gid)]
+            qmin = qmin_map[(bus, gid)]
+            set_gen(bus, gid, pmin, pmax, pmin, qmax, qmin)  # Pgen = Pmin
             set_vsched(bus, vsched_charge[bus])  # Use Charge Vsched
         
         self.psspy.fnsl([1,1,0,0,1,1,0,0])
@@ -166,7 +194,9 @@ class BasicModelService:
             gid = ids[i]
             pmax = pmax_map[(bus, gid)]
             pmin = pmin_map[(bus, gid)]
-            set_gen(bus, gid, pmax, pmax, pmin)  # Pgen = Pmax
+            qmax = qmax_map[(bus, gid)]
+            qmin = qmin_map[(bus, gid)]
+            set_gen(bus, gid, pmax, pmax, pmin, qmax, qmin)  # Pgen = Pmax
             set_vsched(bus, vsched_discharge[bus])  # Use Discharge Vsched
             
         self.psspy.fnsl([1,1,0,0,1,1,0,0])
