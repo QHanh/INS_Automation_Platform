@@ -112,8 +112,10 @@ async def create_basic_model(request: BasicModelRequest):
     # Check project type
     if request.project_type == "BESS":
         success = service.run_bess_alone(cfg)
+    elif request.project_type == "PV":
+        success = service.run_pv_alone(cfg)
     else:
-        # Placeholder for other types
+        # Placeholder for other types (HYBRID)
         return {"success": False, "message": f"Project type {request.project_type} not implemented yet."}
         
     if success:

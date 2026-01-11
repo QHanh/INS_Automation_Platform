@@ -205,3 +205,132 @@ class BasicModelService:
         self._log(f"Saved: {discharge_path}")
 
         return True
+
+    def run_pv_alone(self, cfg: Dict):
+        """
+        Run PV Alone tuning:
+        - Tune P to P_net, Q to 0
+        - Pmax = Pgen after tuning
+        - Pmin = 0
+        - Qmax = sqrt(Mbase^2 - Pmax^2)
+        - Qmin = -Qmax
+        """
+        sav_path = cfg['sav_path']
+        bus_from = cfg['bus_from']
+        bus_to = cfg['bus_to']
+        p_net = cfg['p_net']
+        q_target = 0
+        pv_gens = cfg.get('pv_generators')
+
+        if not pv_gens:
+            self._log("Error: No PV generators provided.")
+            return False
+
+        buses = pv_gens['buses']
+        ids = pv_gens['ids']
+        reg_buses = pv_gens.get('reg_buses', [])
+        if not reg_buses: reg_buses = buses
+
+        if not self._init_psse(): return False
+        
+        self._log(f"Loading {sav_path}...")
+        self.psspy.case(sav_path)
+
+        def get_p_gen(bus, gid):
+            ierr, p = self.psspy.macdat(bus, gid, 'P')
+            return p if ierr == 0 else 0.0
+
+        def get_vsched(bus):
+            ierr, vs = self.psspy.busdat(bus, 'PU')
+            return vs if ierr == 0 else 1.0
+
+        def get_mbase(bus, gid):
+            ierr, mbase = self.psspy.macdat(bus, gid, 'MBASE')
+            return mbase if ierr == 0 else 100.0
+
+        def set_gen(bus, gid, pgen, pmax, pmin, qmax=None, qmin=None):
+            vals = [self._f] * 17
+            vals[0] = pgen
+            if qmax is not None:
+                vals[2] = qmax
+            if qmin is not None:
+                vals[3] = qmin
+            vals[4] = pmax
+            vals[5] = pmin
+            self.psspy.machine_chng_4(bus, gid, [self._i]*7, vals, "")
+
+        def set_vsched(bus, vs):
+            self.psspy.plant_chng_4(bus, 0, [self._i, 0], [vs, 100.0])
+
+        tuner = PSSETuningService(sav_path)
+        tuner.psspy = self.psspy
+        tuner._i = self._i
+        tuner._f = self._f
+        tuner.logs = []
+
+        # ========== TUNE P and Q ==========
+        self._log("--- Tuning for PV (P = P_net, Q = 0) ---")
+        self._log(f"Target P: {p_net} MW, Q: {q_target} Mvar")
+        
+        ok_p = tuner.tune_p(bus_from, bus_to, buses, ids, p_net)
+        if not ok_p: 
+            self._log("Error tuning P for PV.")
+            return False
+        
+        ok_q = tuner.tune_q(bus_from, bus_to, buses, reg_buses, q_target)
+        if not ok_q:
+            self._log("Error tuning Q for PV.")
+            return False
+        
+        # Re-tune P after Q adjustment
+        self._log("--- Re-tuning P for PV ---")
+        ok_p2 = tuner.tune_p(bus_from, bus_to, buses, ids, p_net)
+        if not ok_p2:
+            self._log("Error re-tuning P for PV.")
+            return False
+
+        # Store Pmax (= Pgen after tuning) and Vsched
+        pmax_map = {}
+        vsched_map = {}
+        for i, bus in enumerate(buses):
+            gid = ids[i]
+            pmax_map[(bus, gid)] = get_p_gen(bus, gid)
+            vsched_map[bus] = get_vsched(bus)
+            self._log(f"Gen {bus}-{gid}: Pmax = {pmax_map[(bus, gid)]:.4f}, Vsched = {vsched_map[bus]:.4f}")
+
+        # Calculate Qmax and Qmin based on Mbase and Pmax
+        # Formula: Qmax = sqrt(Mbase^2 - Pmax^2), Qmin = -Qmax
+        qmax_map = {}
+        qmin_map = {}
+        for i, bus in enumerate(buses):
+            gid = ids[i]
+            mbase = get_mbase(bus, gid)
+            pmax = abs(pmax_map[(bus, gid)])
+            if mbase >= pmax:
+                qmax = math.sqrt(mbase**2 - pmax**2)
+            else:
+                qmax = 0.0
+                self._log(f"Warning: Mbase ({mbase:.2f}) < Pmax ({pmax:.2f}) for Gen {bus}-{gid}")
+            qmax_map[(bus, gid)] = qmax
+            qmin_map[(bus, gid)] = -qmax
+            self._log(f"Gen {bus}-{gid}: Mbase = {mbase:.2f}, Qmax = {qmax:.4f}, Qmin = {-qmax:.4f}")
+
+        base_name = os.path.splitext(sav_path)[0]
+
+        # ========== Create PV SAV File ==========
+        self._log("--- Creating _PV.sav ---")
+        for i, bus in enumerate(buses):
+            gid = ids[i]
+            pmax = pmax_map[(bus, gid)]
+            pmin = 0.0  # PV Pmin = 0
+            qmax = qmax_map[(bus, gid)]
+            qmin = qmin_map[(bus, gid)]
+            set_gen(bus, gid, pmax, pmax, pmin, qmax, qmin)  # Pgen = Pmax
+            set_vsched(bus, vsched_map[bus])
+        
+        self.psspy.fnsl([1,1,0,0,1,1,0,0])
+        pv_path = f"{base_name}_PV.sav"
+        self.psspy.save(pv_path)
+        self._log(f"Saved: {pv_path}")
+
+        return True
