@@ -334,3 +334,368 @@ class BasicModelService:
         self._log(f"Saved: {pv_path}")
 
         return True
+
+    def run_hybrid(self, cfg: Dict):
+        """
+        Run HYBRID (PV + BESS) tuning - generates 5 SAV files:
+        1. PV + BESS Discharge
+        2. PV + BESS Charge
+        3. PV Only (BESS disabled)
+        4. BESS Discharge Only (PV disabled)
+        5. BESS Charge Only (PV disabled)
+        """
+        sav_path = cfg['sav_path']
+        bus_from = cfg['bus_from']
+        bus_to = cfg['bus_to']
+        p_net = cfg['p_net']
+        q_target = 0
+        
+        pv_gens = cfg.get('pv_generators')
+        bess_gens = cfg.get('bess_generators')
+
+        if not pv_gens:
+            self._log("Error: No PV generators provided for HYBRID.")
+            return False
+        if not bess_gens:
+            self._log("Error: No BESS generators provided for HYBRID.")
+            return False
+
+        pv_buses = pv_gens['buses']
+        pv_ids = pv_gens['ids']
+        pv_reg_buses = pv_gens.get('reg_buses', pv_buses)
+
+        bess_buses = bess_gens['buses']
+        bess_ids = bess_gens['ids']
+        bess_reg_buses = bess_gens.get('reg_buses', bess_buses)
+
+        # Combined lists for when both PV and BESS are active
+        all_buses = pv_buses + bess_buses
+        all_ids = pv_ids + bess_ids
+        all_reg_buses = pv_reg_buses + bess_reg_buses
+
+        if not self._init_psse(): return False
+
+        def get_p_gen(bus, gid):
+            ierr, p = self.psspy.macdat(bus, gid, 'P')
+            return p if ierr == 0 else 0.0
+
+        def get_vsched(bus):
+            ierr, vs = self.psspy.busdat(bus, 'PU')
+            return vs if ierr == 0 else 1.0
+
+        def get_mbase(bus, gid):
+            ierr, mbase = self.psspy.macdat(bus, gid, 'MBASE')
+            return mbase if ierr == 0 else 100.0
+
+        def set_gen(bus, gid, pgen, pmax, pmin, qmax=None, qmin=None):
+            vals = [self._f] * 17
+            vals[0] = pgen
+            if qmax is not None:
+                vals[2] = qmax
+            if qmin is not None:
+                vals[3] = qmin
+            vals[4] = pmax
+            vals[5] = pmin
+            self.psspy.machine_chng_4(bus, gid, [self._i]*7, vals, "")
+
+        def set_vsched(bus, vs):
+            self.psspy.plant_chng_4(bus, 0, [self._i, 0], [vs, 100.0])
+
+        def calc_qmax(bus, gid, pmax_val):
+            mbase = get_mbase(bus, gid)
+            pmax_abs = abs(pmax_val)
+            if mbase >= pmax_abs:
+                qmax = math.sqrt(mbase**2 - pmax_abs**2)
+            else:
+                qmax = 0.0
+                self._log(f"Warning: Mbase ({mbase:.2f}) < Pmax ({pmax_abs:.2f}) for Gen {bus}-{gid}")
+            return qmax
+
+        base_name = os.path.splitext(sav_path)[0]
+        tuner = PSSETuningService(sav_path)
+
+        # ========================================================================
+        # CASE 1 & 2: PV + BESS (Discharge / Charge)
+        # ========================================================================
+        self._log("=" * 60)
+        self._log("CASE 1 & 2: PV + BESS Combined")
+        self._log("=" * 60)
+        
+        self.psspy.case(sav_path)
+        tuner.psspy = self.psspy
+        tuner._i = self._i
+        tuner._f = self._f
+        tuner.logs = []
+
+        # --- Tune for DISCHARGE (P = +P_net) ---
+        self._log("--- Tuning for PV + BESS Discharge ---")
+        self._log(f"Target P: {p_net} MW, Q: {q_target} Mvar")
+        
+        ok = tuner.tune_p(bus_from, bus_to, all_buses, all_ids, p_net)
+        if not ok: 
+            self._log("Error tuning P for PV+BESS Discharge.")
+            return False
+        ok = tuner.tune_q(bus_from, bus_to, all_buses, all_reg_buses, q_target)
+        if not ok:
+            self._log("Error tuning Q for PV+BESS Discharge.")
+            return False
+        self._log("--- Re-tuning P for PV + BESS Discharge ---")
+        ok = tuner.tune_p(bus_from, bus_to, all_buses, all_ids, p_net)
+        if not ok:
+            self._log("Error re-tuning P for PV+BESS Discharge.")
+            return False
+
+        # Store discharge values
+        pmax_all = {}
+        vsched_discharge = {}
+        for i, bus in enumerate(all_buses):
+            gid = all_ids[i]
+            pmax_all[(bus, gid)] = get_p_gen(bus, gid)
+            vsched_discharge[bus] = get_vsched(bus)
+            self._log(f"Gen {bus}-{gid}: Pmax = {pmax_all[(bus, gid)]:.4f}, Vsched = {vsched_discharge[bus]:.4f}")
+
+        # --- Tune for CHARGE (P = -P_net), only BESS changes sign ---
+        self._log("--- Tuning for PV + BESS Charge ---")
+        # For charge: PV still at P_net, BESS at -P_net (charging)
+        # Total flow = PV_P - BESS_P (BESS absorbing)
+        # We tune BESS to charge while PV still generates
+        p_charge_bess = -1.0 * p_net
+        self._log(f"Target BESS P: {p_charge_bess} MW")
+
+        ok = tuner.tune_p(bus_from, bus_to, bess_buses, bess_ids, p_charge_bess)
+        if not ok:
+            self._log("Error tuning P for BESS Charge.")
+            return False
+        ok = tuner.tune_q(bus_from, bus_to, all_buses, all_reg_buses, q_target)
+        if not ok:
+            self._log("Error tuning Q for PV+BESS Charge.")
+            return False
+        self._log("--- Re-tuning P for BESS Charge ---")
+        ok = tuner.tune_p(bus_from, bus_to, bess_buses, bess_ids, p_charge_bess)
+        if not ok:
+            self._log("Error re-tuning P for BESS Charge.")
+            return False
+
+        # Store charge values (for BESS Pmin)
+        pmin_bess = {}
+        vsched_charge = {}
+        for i, bus in enumerate(bess_buses):
+            gid = bess_ids[i]
+            pmin_bess[(bus, gid)] = get_p_gen(bus, gid)
+            vsched_charge[bus] = get_vsched(bus)
+            self._log(f"BESS Gen {bus}-{gid}: Pmin = {pmin_bess[(bus, gid)]:.4f}, Vsched = {vsched_charge[bus]:.4f}")
+
+        # Calculate Qmax/Qmin for all generators
+        qmax_all = {}
+        qmin_all = {}
+        for i, bus in enumerate(all_buses):
+            gid = all_ids[i]
+            qmax_all[(bus, gid)] = calc_qmax(bus, gid, pmax_all[(bus, gid)])
+            qmin_all[(bus, gid)] = -qmax_all[(bus, gid)]
+            self._log(f"Gen {bus}-{gid}: Qmax = {qmax_all[(bus, gid)]:.4f}, Qmin = {qmin_all[(bus, gid)]:.4f}")
+
+        # --- Save CASE 1: PV + BESS Discharge ---
+        self._log("--- Creating _HYBRID_PV_BESS_Discharge.sav ---")
+        self.psspy.case(sav_path)
+        # Set PV generators
+        for i, bus in enumerate(pv_buses):
+            gid = pv_ids[i]
+            pmax = pmax_all[(bus, gid)]
+            set_gen(bus, gid, pmax, pmax, 0.0, qmax_all[(bus, gid)], qmin_all[(bus, gid)])
+            set_vsched(bus, vsched_discharge[bus])
+        # Set BESS generators (Discharge: Pgen = Pmax)
+        for i, bus in enumerate(bess_buses):
+            gid = bess_ids[i]
+            pmax = pmax_all[(bus, gid)]
+            pmin = pmin_bess[(bus, gid)]
+            set_gen(bus, gid, pmax, pmax, pmin, qmax_all[(bus, gid)], qmin_all[(bus, gid)])
+            set_vsched(bus, vsched_discharge[bus])
+        
+        self.psspy.fnsl([1,1,0,0,1,1,0,0])
+        self.psspy.save(f"{base_name}_HYBRID_PV_BESS_Discharge.sav")
+        self._log(f"Saved: {base_name}_HYBRID_PV_BESS_Discharge.sav")
+
+        # --- Save CASE 2: PV + BESS Charge ---
+        self._log("--- Creating _HYBRID_PV_BESS_Charge.sav ---")
+        self.psspy.case(sav_path)
+        # Set PV generators (same as discharge)
+        for i, bus in enumerate(pv_buses):
+            gid = pv_ids[i]
+            pmax = pmax_all[(bus, gid)]
+            set_gen(bus, gid, pmax, pmax, 0.0, qmax_all[(bus, gid)], qmin_all[(bus, gid)])
+            set_vsched(bus, vsched_discharge[bus])
+        # Set BESS generators (Charge: Pgen = Pmin)
+        for i, bus in enumerate(bess_buses):
+            gid = bess_ids[i]
+            pmax = pmax_all[(bus, gid)]
+            pmin = pmin_bess[(bus, gid)]
+            set_gen(bus, gid, pmin, pmax, pmin, qmax_all[(bus, gid)], qmin_all[(bus, gid)])
+            set_vsched(bus, vsched_charge[bus])
+        
+        self.psspy.fnsl([1,1,0,0,1,1,0,0])
+        self.psspy.save(f"{base_name}_HYBRID_PV_BESS_Charge.sav")
+        self._log(f"Saved: {base_name}_HYBRID_PV_BESS_Charge.sav")
+
+        # ========================================================================
+        # CASE 3: PV Only (BESS disabled)
+        # ========================================================================
+        self._log("=" * 60)
+        self._log("CASE 3: PV Only (BESS Disabled)")
+        self._log("=" * 60)
+        
+        self.psspy.case(sav_path)
+        tuner.psspy = self.psspy
+        tuner.logs = []
+
+        # Disable BESS generators
+        self._log("Disabling BESS generators...")
+        self.disable_generators(bess_buses, bess_ids)
+
+        # Tune PV
+        self._log(f"--- Tuning PV to P_net = {p_net} MW ---")
+        ok = tuner.tune_p(bus_from, bus_to, pv_buses, pv_ids, p_net)
+        if not ok:
+            self._log("Error tuning P for PV Only.")
+            return False
+        ok = tuner.tune_q(bus_from, bus_to, pv_buses, pv_reg_buses, q_target)
+        if not ok:
+            self._log("Error tuning Q for PV Only.")
+            return False
+        self._log("--- Re-tuning P for PV Only ---")
+        ok = tuner.tune_p(bus_from, bus_to, pv_buses, pv_ids, p_net)
+        if not ok:
+            self._log("Error re-tuning P for PV Only.")
+            return False
+
+        # Store PV values
+        pmax_pv = {}
+        vsched_pv = {}
+        for i, bus in enumerate(pv_buses):
+            gid = pv_ids[i]
+            pmax_pv[(bus, gid)] = get_p_gen(bus, gid)
+            vsched_pv[bus] = get_vsched(bus)
+        
+        # Set PV generators
+        for i, bus in enumerate(pv_buses):
+            gid = pv_ids[i]
+            pmax = pmax_pv[(bus, gid)]
+            qmax = calc_qmax(bus, gid, pmax)
+            set_gen(bus, gid, pmax, pmax, 0.0, qmax, -qmax)
+            set_vsched(bus, vsched_pv[bus])
+            self._log(f"PV Gen {bus}-{gid}: Pmax = {pmax:.4f}, Qmax = {qmax:.4f}")
+
+        self.psspy.fnsl([1,1,0,0,1,1,0,0])
+        self.psspy.save(f"{base_name}_HYBRID_PV_Only.sav")
+        self._log(f"Saved: {base_name}_HYBRID_PV_Only.sav")
+
+        # ========================================================================
+        # CASE 4 & 5: BESS Only (PV disabled) - Discharge / Charge
+        # ========================================================================
+        self._log("=" * 60)
+        self._log("CASE 4 & 5: BESS Only (PV Disabled)")
+        self._log("=" * 60)
+        
+        self.psspy.case(sav_path)
+        tuner.psspy = self.psspy
+        tuner.logs = []
+
+        # Disable PV generators
+        self._log("Disabling PV generators...")
+        self.disable_generators(pv_buses, pv_ids)
+
+        # --- Tune BESS Discharge ---
+        self._log(f"--- Tuning BESS Discharge to P_net = {p_net} MW ---")
+        ok = tuner.tune_p(bus_from, bus_to, bess_buses, bess_ids, p_net)
+        if not ok:
+            self._log("Error tuning P for BESS Discharge Only.")
+            return False
+        ok = tuner.tune_q(bus_from, bus_to, bess_buses, bess_reg_buses, q_target)
+        if not ok:
+            self._log("Error tuning Q for BESS Discharge Only.")
+            return False
+        self._log("--- Re-tuning P for BESS Discharge Only ---")
+        ok = tuner.tune_p(bus_from, bus_to, bess_buses, bess_ids, p_net)
+        if not ok:
+            self._log("Error re-tuning P for BESS Discharge Only.")
+            return False
+
+        # Store BESS Discharge values
+        pmax_bess_only = {}
+        vsched_bess_disch = {}
+        for i, bus in enumerate(bess_buses):
+            gid = bess_ids[i]
+            pmax_bess_only[(bus, gid)] = get_p_gen(bus, gid)
+            vsched_bess_disch[bus] = get_vsched(bus)
+            self._log(f"BESS Gen {bus}-{gid}: Pmax = {pmax_bess_only[(bus, gid)]:.4f}")
+
+        # --- Tune BESS Charge ---
+        self._log(f"--- Tuning BESS Charge to P = {-p_net} MW ---")
+        ok = tuner.tune_p(bus_from, bus_to, bess_buses, bess_ids, -p_net)
+        if not ok:
+            self._log("Error tuning P for BESS Charge Only.")
+            return False
+        ok = tuner.tune_q(bus_from, bus_to, bess_buses, bess_reg_buses, q_target)
+        if not ok:
+            self._log("Error tuning Q for BESS Charge Only.")
+            return False
+        self._log("--- Re-tuning P for BESS Charge Only ---")
+        ok = tuner.tune_p(bus_from, bus_to, bess_buses, bess_ids, -p_net)
+        if not ok:
+            self._log("Error re-tuning P for BESS Charge Only.")
+            return False
+
+        # Store BESS Charge values
+        pmin_bess_only = {}
+        vsched_bess_chg = {}
+        for i, bus in enumerate(bess_buses):
+            gid = bess_ids[i]
+            pmin_bess_only[(bus, gid)] = get_p_gen(bus, gid)
+            vsched_bess_chg[bus] = get_vsched(bus)
+            self._log(f"BESS Gen {bus}-{gid}: Pmin = {pmin_bess_only[(bus, gid)]:.4f}")
+
+        # Calculate Qmax/Qmin for BESS only
+        qmax_bess_only = {}
+        for i, bus in enumerate(bess_buses):
+            gid = bess_ids[i]
+            qmax_bess_only[(bus, gid)] = calc_qmax(bus, gid, pmax_bess_only[(bus, gid)])
+            self._log(f"BESS Gen {bus}-{gid}: Qmax = {qmax_bess_only[(bus, gid)]:.4f}")
+
+        # --- Save CASE 4: BESS Discharge Only ---
+        self._log("--- Creating _HYBRID_BESS_Discharge.sav ---")
+        self.psspy.case(sav_path)
+        self.disable_generators(pv_buses, pv_ids)
+        
+        for i, bus in enumerate(bess_buses):
+            gid = bess_ids[i]
+            pmax = pmax_bess_only[(bus, gid)]
+            pmin = pmin_bess_only[(bus, gid)]
+            qmax = qmax_bess_only[(bus, gid)]
+            set_gen(bus, gid, pmax, pmax, pmin, qmax, -qmax)
+            set_vsched(bus, vsched_bess_disch[bus])
+
+        self.psspy.fnsl([1,1,0,0,1,1,0,0])
+        self.psspy.save(f"{base_name}_HYBRID_BESS_Discharge.sav")
+        self._log(f"Saved: {base_name}_HYBRID_BESS_Discharge.sav")
+
+        # --- Save CASE 5: BESS Charge Only ---
+        self._log("--- Creating _HYBRID_BESS_Charge.sav ---")
+        self.psspy.case(sav_path)
+        self.disable_generators(pv_buses, pv_ids)
+        
+        for i, bus in enumerate(bess_buses):
+            gid = bess_ids[i]
+            pmax = pmax_bess_only[(bus, gid)]
+            pmin = pmin_bess_only[(bus, gid)]
+            qmax = qmax_bess_only[(bus, gid)]
+            set_gen(bus, gid, pmin, pmax, pmin, qmax, -qmax)
+            set_vsched(bus, vsched_bess_chg[bus])
+
+        self.psspy.fnsl([1,1,0,0,1,1,0,0])
+        self.psspy.save(f"{base_name}_HYBRID_BESS_Charge.sav")
+        self._log(f"Saved: {base_name}_HYBRID_BESS_Charge.sav")
+
+        self._log("=" * 60)
+        self._log("HYBRID completed - 5 files generated!")
+        self._log("=" * 60)
+
+        return True

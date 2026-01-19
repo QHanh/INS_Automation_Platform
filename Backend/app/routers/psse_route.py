@@ -114,9 +114,10 @@ async def create_basic_model(request: BasicModelRequest):
         success = service.run_bess_alone(cfg)
     elif request.project_type == "PV":
         success = service.run_pv_alone(cfg)
+    elif request.project_type == "HYBRID":
+        success = service.run_hybrid(cfg)
     else:
-        # Placeholder for other types (HYBRID)
-        return {"success": False, "message": f"Project type {request.project_type} not implemented yet."}
+        return {"success": False, "message": f"Project type {request.project_type} not supported. Use BESS, PV, or HYBRID."}
         
     if success:
          return {"success": True, "message": "Basic Model generation completed."}

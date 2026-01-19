@@ -6,14 +6,22 @@ import logging
 import re
 from typing import List, Dict, Any
 
+# Add Backend root
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+# Add TOOLs directory to allow top-level 'mhi' import
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'TOOLs')))
 
 try:
-    from TOOLs import mhi
-    from TOOLs.mhi import pscad
+    import mhi
+    from mhi import pscad
     from TOOLs import fileUtils as utils
 except ImportError:
-    print("Warning: TOOLs library not found. PSCAD automation may fail.")
+    try:
+        from TOOLs import mhi
+        from TOOLs.mhi import pscad
+        from TOOLs import fileUtils as utils
+    except ImportError:
+        print("Warning: TOOLs library not found. PSCAD automation may fail.")
 
 class PSCADCreateCaseService:
     def __init__(self):

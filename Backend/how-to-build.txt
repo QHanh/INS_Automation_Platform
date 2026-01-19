@@ -16,8 +16,8 @@ python -m PyInstaller --noconfirm --onefile --console --name "backend" --clean `
 --hidden-import=PSCAD_Model `
 --hidden-import=Data `
 --hidden-import=component `
---hidden-import=TOOLs.mhi `
---hidden-import=TOOLs.mhi.pscad `
+--hidden-import=mhi `
+--hidden-import=mhi.pscad `
 --paths="." --paths="TOOLs" server.py
 
 
