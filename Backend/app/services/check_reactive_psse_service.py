@@ -589,16 +589,13 @@ def check_095_lagging(psspy, log_cb, cfg, _i, _f):
              log_cb(f"⚠️ All MPT reached RMAX. Conditions might not be met.")
              break
         
-        ierr = psspy.fnsl([1,1,0,0,1,1,0,0])
-        if ierr != 0:
-            log_cb("⚠️ fnsl error when increasing ratio, stopping.")
-            break
-            
-        q_now = get_q()
+        # Tune V_sched again with new tap
+        q_now, vsched_final = tune_vsched_for_target_q(psspy, log_cb, cfg, q_095_lagging, v_min=0.9, v_max=1.1)
+        
         v_passed, _ = check_bus_voltages(psspy, log_cb, 1.1, "lag")
         
-        if q_now >= q_095_lagging and v_passed:
-            log_cb(f"✅ Requirements PASSED.")
+        if abs(q_now - q_095_lagging) < 1e-2 and v_passed:
+            log_cb(f"✅ Requirements PASSED at {ratio_str}")
             break
 
     log_cb("✅ Finished 0.95 lagging check.")
@@ -663,16 +660,13 @@ def check_095_leading(psspy, log_cb, cfg, _i, _f):
             log_cb(f"⚠️ All MPT reached RMIN. Conditions might not be met.")
             break
 
-        ierr = psspy.fnsl([1,1,0,0,1,1,0,0])
-        if ierr != 0:
-            log_cb("⚠️ fnsl error when decreasing ratio, stopping.")
-            break
-
-        q_now = get_q()
+        # Tune V_sched again with new tap
+        q_now, vsched_final = tune_vsched_for_target_q(psspy, log_cb, cfg, q_095_leading, v_min=0.9, v_max=1.1)
+        
         v_passed, _ = check_bus_voltages(psspy, log_cb, 0.9, "lead")
         
-        if q_now <= q_095_leading and v_passed:
-            log_cb(f"✅ Requirements PASSED.")
+        if abs(q_now - q_095_leading) < 1e-2 and v_passed:
+            log_cb(f"✅ Requirements PASSED at {ratio_str}")
             break
 
     log_cb("✅ Finished 0.95 leading check.")
