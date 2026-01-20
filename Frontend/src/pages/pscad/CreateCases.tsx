@@ -3,7 +3,7 @@ import BackButton from '../../components/BackButton';
 import { useFileDialog } from '../../hooks/useFileDialog';
 import { pscadApi } from '../../services/pscadApi';
 import type { CreateCasesRequest, PSCADCase } from '../../services/pscadApi';
-import { FolderOpen, File, Loader2, Plus, Trash2, X, Pencil, ChevronDown, ChevronRight } from 'lucide-react';
+import { FolderOpen, File, Loader2, Plus, Trash2, X, Pencil, ChevronDown, ChevronRight, Copy } from 'lucide-react';
 
 interface LogDetails {
     output_file?: string;
@@ -91,6 +91,25 @@ export default function PSCADCreateCases() {
     const removeUiCase = (index: number) => {
         const newCases = [...uiCases];
         newCases.splice(index, 1);
+        setUiCases(newCases);
+    };
+
+    const duplicateUiCase = (index: number) => {
+        const newCases = [...uiCases];
+        const caseToDuplicate = newCases[index];
+        
+        // Deep clone the case to avoid reference issues
+        const duplicatedCase: UICase = {
+            new_filename: caseToDuplicate.new_filename.replace(/\.pscx$/, '') + '_copy.pscx',
+            components: caseToDuplicate.components.map(comp => ({
+                id: comp.id,
+                parametersList: comp.parametersList.map(param => ({ ...param }))
+            })),
+            isCollapsed: false
+        };
+        
+        // Insert the duplicated case right after the original
+        newCases.splice(index + 1, 0, duplicatedCase);
         setUiCases(newCases);
     };
 
@@ -271,16 +290,25 @@ export default function PSCADCreateCases() {
 
                         {uiCases.map((uiCase, caseIdx) => (
                             <div key={caseIdx} className="bg-bg-surface p-4 rounded-lg border border-border-color relative group">
-                                <button
-                                    onClick={() => removeUiCase(caseIdx)}
-                                    className="absolute top-4 right-4 text-text-secondary hover:text-red-400 p-1 rounded-md hover:bg-red-400/10 transition-colors"
-                                    title="Remove Case"
-                                >
-                                    <Trash2 size={18} />
-                                </button>
+                                <div className="absolute top-4 right-4 flex items-center gap-2">
+                                    <button
+                                        onClick={() => duplicateUiCase(caseIdx)}
+                                        className="text-text-secondary hover:text-blue-400 p-1 rounded-md hover:bg-blue-400/10 transition-colors"
+                                        title="Duplicate Case"
+                                    >
+                                        <Copy size={18} />
+                                    </button>
+                                    <button
+                                        onClick={() => removeUiCase(caseIdx)}
+                                        className="text-text-secondary hover:text-red-400 p-1 rounded-md hover:bg-red-400/10 transition-colors"
+                                        title="Remove Case"
+                                    >
+                                        <Trash2 size={18} />
+                                    </button>
+                                </div>
 
                                 <div className="space-y-4">
-                                    <div className="flex items-center gap-2 pr-10">
+                                    <div className="flex items-center gap-2 pr-20">
                                         <button onClick={() => toggleCollapse(caseIdx)} className="text-text-secondary hover:text-text-primary">
                                             {uiCase.isCollapsed ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
                                         </button>

@@ -7,15 +7,37 @@ interface LicenseGuardProps {
     children: React.ReactNode;
 }
 
+const LICENSE_STORAGE_KEY = 'ins_license_path';
+
 export const LicenseGuard: React.FC<LicenseGuardProps> = ({ children }) => {
     const [isVerified, setIsVerified] = useState(false);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const { selectFile } = useFileDialog();
 
     useEffect(() => {
-        // Optional: Check if we have a saved valid session, currently enforcing check on mount
-        // logic could be added here to skip check if already verified in session
+        // Tự động load và verify license từ local storage khi mở app
+        const checkSavedLicense = async () => {
+            const savedLicensePath = localStorage.getItem(LICENSE_STORAGE_KEY);
+            if (savedLicensePath) {
+                try {
+                    const result = await licenseApi.verifyLicense(savedLicensePath);
+                    if (result.success) {
+                        setIsVerified(true);
+                    } else {
+                        // License không hợp lệ, xóa khỏi storage
+                        localStorage.removeItem(LICENSE_STORAGE_KEY);
+                        setError('Saved license is invalid or expired. Please select a new license file.');
+                    }
+                } catch (err: any) {
+                    localStorage.removeItem(LICENSE_STORAGE_KEY);
+                    setError('Error loading saved license. Please select a new license file.');
+                }
+            }
+            setLoading(false);
+        };
+
+        checkSavedLicense();
     }, []);
 
     const handleSelectLicense = async () => {
@@ -29,6 +51,8 @@ export const LicenseGuard: React.FC<LicenseGuardProps> = ({ children }) => {
             if (selected) {
                 const result = await licenseApi.verifyLicense(selected as string);
                 if (result.success) {
+                    // Lưu đường dẫn file license vào local storage
+                    localStorage.setItem(LICENSE_STORAGE_KEY, selected as string);
                     setIsVerified(true);
                 } else {
                     setError(result.error || 'Invalid License');
@@ -43,6 +67,18 @@ export const LicenseGuard: React.FC<LicenseGuardProps> = ({ children }) => {
 
     if (isVerified) {
         return <>{children}</>;
+    }
+
+    // Hiển thị loading khi đang check license đã lưu
+    if (loading) {
+        return (
+            <div className="fixed inset-0 z-50 bg-bg-app flex items-center justify-center">
+                <div className="text-center space-y-4">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+                    <p className="text-text-secondary">Checking license...</p>
+                </div>
+            </div>
+        );
     }
 
     return (
