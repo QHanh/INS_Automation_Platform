@@ -1,5 +1,6 @@
 import sys
 import os
+import traceback
 
 # Add libs to path
 LIBS_PATH = os.path.join(os.path.dirname(__file__), "build_model_libs")
@@ -36,7 +37,11 @@ class PsseBuildService:
                 
             return result
         except Exception as e:
-            return {"success": False, "message": str(e)}
+            return {
+                "success": False, 
+                "message": str(e),
+                "traceback": traceback.format_exc()
+            }
 
     def build_detailed_model(self, excel_path: str):
         if not os.path.exists(excel_path):
@@ -55,4 +60,8 @@ class PsseBuildService:
             
             return result
         except Exception as e:
-            return {"success": False, "message": str(e)}
+            return {
+                "success": False, 
+                "message": str(e),
+                "traceback": traceback.format_exc()
+            }

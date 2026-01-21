@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 import os
+import traceback
 from typing import Literal
 from app.schemas.psse_schema import BuildModelRequest, TuningRequest, ReactiveCheckConfig, RunCheckResponse, BasicModelRequest
 
@@ -16,7 +17,12 @@ async def build_model(request: BuildModelRequest):
         result = service.build_equivalent_model(request.file_path)
         
         if not result["success"]:
-             raise HTTPException(status_code=500, detail=result["message"])
+            error_detail = {
+                "error": result["message"],
+                "traceback": result.get("traceback", ""),
+                "file_path": request.file_path
+            }
+            raise HTTPException(status_code=500, detail=error_detail)
 
         # Determine output folder (assumed to be same as input file dir for now)
         output_folder = os.path.dirname(request.file_path)
@@ -29,8 +35,15 @@ async def build_model(request: BuildModelRequest):
             "sav_file": os.path.join(output_folder, "project.sav")
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        error_detail = {
+            "error": str(e),
+            "traceback": traceback.format_exc(),
+            "file_path": request.file_path
+        }
+        raise HTTPException(status_code=500, detail=error_detail)
 
 
 @router.post("/build-detailed-model")
@@ -44,7 +57,12 @@ async def build_detailed_model(request: BuildModelRequest):
         result = service.build_detailed_model(request.file_path)
         
         if not result["success"]:
-            raise HTTPException(status_code=500, detail=result["message"])
+            error_detail = {
+                "error": result["message"],
+                "traceback": result.get("traceback", ""),
+                "file_path": request.file_path
+            }
+            raise HTTPException(status_code=500, detail=error_detail)
         
         return {
             "message": result["message"],
@@ -52,8 +70,15 @@ async def build_detailed_model(request: BuildModelRequest):
             "output_folder": os.path.dirname(request.file_path)
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        error_detail = {
+            "error": str(e),
+            "traceback": traceback.format_exc(),
+            "file_path": request.file_path
+        }
+        raise HTTPException(status_code=500, detail=error_detail)
 
 @router.post("/tune/{mode}")
 async def tune_psse(mode: Literal["P", "Q", "PQ"], request: TuningRequest):

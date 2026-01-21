@@ -8,6 +8,9 @@ import { File, Loader2 } from 'lucide-react';
 interface LogDetails {
     output_file?: string;
     message?: string;
+    error?: string;
+    traceback?: string;
+    file_path?: string;
     [key: string]: string | undefined;
 }
 
@@ -79,10 +82,15 @@ export default function PSCADBuildModel() {
                 details: data
             }]);
         } else {
+            // Handle error with detailed information
+            const errorData = result.data as LogDetails | undefined;
+            const errorMessage = result.error || 'Failed to generate equivalent model';
+            
             setLogs(prev => [...prev, {
                 timestamp,
                 type: 'error',
-                message: result.error || 'Failed to generate equivalent model'
+                message: errorMessage,
+                details: errorData
             }]);
         }
     };
@@ -175,10 +183,28 @@ export default function PSCADBuildModel() {
                                                 </span>
                                                 <span className="text-text-primary flex-1">{log.message}</span>
                                             </div>
-                                            {log.details?.output_file && (
-                                                <div className="ml-20 mt-1 text-xs">
-                                                    <span className="text-text-secondary">Output: </span>
-                                                    <span className="text-text-primary font-mono">{log.details.output_file}</span>
+                                            {log.details && (
+                                                <div className="ml-20 mt-1 text-xs space-y-0.5">
+                                                    {log.details.file_path && (
+                                                        <div>
+                                                            <span className="text-text-secondary">File: </span>
+                                                            <span className="text-text-primary font-mono">{log.details.file_path}</span>
+                                                        </div>
+                                                    )}
+                                                    {log.details.traceback && (
+                                                        <div className="mt-2">
+                                                            <span className="text-text-secondary">Traceback:</span>
+                                                            <pre className="mt-1 p-2 bg-black/30 rounded text-red-300 font-mono text-xs overflow-x-auto whitespace-pre-wrap">
+                                                                {log.details.traceback}
+                                                            </pre>
+                                                        </div>
+                                                    )}
+                                                    {log.details.output_file && (
+                                                        <div>
+                                                            <span className="text-text-secondary">Output: </span>
+                                                            <span className="text-text-primary font-mono">{log.details.output_file}</span>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>

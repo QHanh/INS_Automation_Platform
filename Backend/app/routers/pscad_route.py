@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 import os
+import traceback
 from app.schemas.pscad_schema import BuildPSCADModelRequest, PSCADCreateCaseRequest
 
 router = APIRouter()
@@ -15,14 +16,24 @@ async def build_equivalent_model(request: BuildPSCADModelRequest):
         result = service.build_equivalent_model(request.file_path)
         
         if not result["success"]:
-             raise HTTPException(status_code=500, detail=result["message"])
+            error_detail = {
+                "error": result["message"],
+                "traceback": result.get("traceback", ""),
+                "file_path": request.file_path
+            }
+            raise HTTPException(status_code=500, detail=error_detail)
              
         return result
         
+    except HTTPException:
+        raise
     except Exception as e:
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        error_detail = {
+            "error": str(e),
+            "traceback": traceback.format_exc(),
+            "file_path": request.file_path
+        }
+        raise HTTPException(status_code=500, detail=error_detail)
 
 
 @router.post("/create-cases")

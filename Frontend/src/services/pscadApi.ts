@@ -43,11 +43,21 @@ export const pscadApi = {
                 body: JSON.stringify(data),
             });
 
+            const result = await response.json();
+
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                // Parse error detail from backend
+                const errorDetail = typeof result.detail === 'object' 
+                    ? result.detail 
+                    : { error: result.detail || `HTTP error! status: ${response.status}` };
+                
+                return {
+                    success: false,
+                    error: errorDetail.error || 'Unknown error',
+                    data: errorDetail // Include full error details (traceback, file_path, etc.)
+                };
             }
 
-            const result = await response.json();
             return { success: true, data: result };
         } catch (error) {
             return {

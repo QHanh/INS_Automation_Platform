@@ -2,5 +2,5 @@
 Version information for INS Automation Platform Backend
 """
 
-__version__ = "0.1.9"
+__version__ = "0.2.0"
 API_VERSION = "1.0"

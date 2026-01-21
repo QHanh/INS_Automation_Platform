@@ -89,11 +89,21 @@ export const psseApi = {
                 body: JSON.stringify(data),
             });
 
+            const result = await response.json();
+
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                // Parse error detail from backend
+                const errorDetail = typeof result.detail === 'object' 
+                    ? result.detail 
+                    : { error: result.detail || `HTTP error! status: ${response.status}` };
+                
+                return {
+                    success: false,
+                    error: errorDetail.error || 'Unknown error',
+                    data: errorDetail // Include full error details (traceback, file_path, etc.)
+                };
             }
 
-            const result = await response.json();
             return { success: true, data: result };
         } catch (error) {
             return {
@@ -104,7 +114,6 @@ export const psseApi = {
     },
 
     async buildDetailedModel(data: BuildModelRequest): Promise<ApiResponse> {
-        // ... (start of existing object)
         try {
             const response = await fetch(`${API_BASE_URL}/psse/build-detailed-model`, {
                 method: 'POST',
@@ -114,11 +123,21 @@ export const psseApi = {
                 body: JSON.stringify(data),
             });
 
+            const result = await response.json();
+
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                // Parse error detail from backend
+                const errorDetail = typeof result.detail === 'object' 
+                    ? result.detail 
+                    : { error: result.detail || `HTTP error! status: ${response.status}` };
+                
+                return {
+                    success: false,
+                    error: errorDetail.error || 'Unknown error',
+                    data: errorDetail // Include full error details (traceback, file_path, etc.)
+                };
             }
 
-            const result = await response.json();
             return { success: true, data: result };
         } catch (error) {
             return {
