@@ -18,11 +18,14 @@ FILES = {
 TAURI_BUNDLE_DIR = os.path.join("Frontend", "src-tauri", "target", "release", "bundle", "nsis")
 UPDATER_JSON_PATH = "updater.json"
 
-def run_command(command, cwd=None):
+def run_command(command, cwd=None, env=None):
     """Chạy lệnh shell và in ra output."""
     print(f"🔹 Executing: {command}")
     try:
-        subprocess.check_call(command, shell=True, cwd=cwd)
+        # Nếu không truyền env riêng, dùng os.environ mặc định
+        # Nếu có truyền, subprocess sẽ dùng cái đó
+        run_env = env if env else os.environ
+        subprocess.check_call(command, shell=True, cwd=cwd, env=run_env)
     except subprocess.CalledProcessError as e:
         print(f"❌ Error running command: {command}")
         sys.exit(1)
@@ -54,12 +57,29 @@ def update_python(file_path, new_version):
 def build_app():
     """Build app bằng Tauri CLI."""
     print("\n🔨 Building application...")
-    # Kiểm tra biến môi trường
-    if not os.environ.get("TAURI_SIGNING_PRIVATE_KEY"):
-        print("⚠️  WARNING: TAURI_SIGNING_PRIVATE_KEY is not set. Updater signature will fail!")
+    
+    key_path = os.path.join("Frontend", "src-tauri", "tauri.key")
+    
+    # Ưu tiên đọc từ file tauri.key nếu có (để override biến môi trường cũ có thể bị sai)
+    if os.path.exists(key_path):
+        print(f"🔹 Loading private key from {key_path}...")
+        with open(key_path, 'r') as f:
+            os.environ["TAURI_SIGNING_PRIVATE_KEY"] = f.read().strip()
+        
+        if "TAURI_SIGNING_PRIVATE_KEY_PASSWORD" in os.environ:
+            del os.environ["TAURI_SIGNING_PRIVATE_KEY_PASSWORD"]
+        # Set mật khẩu cố định 123456 theo yêu cầu
+        os.environ["TAURI_SIGNING_PRIVATE_KEY_PASSWORD"] = "123456"
+            
+    # Nếu không có file, mới check biến môi trường
+    elif not os.environ.get("TAURI_SIGNING_PRIVATE_KEY"):
+        print("⚠️  WARNING: TAURI_SIGNING_PRIVATE_KEY is not set and tauri.key file not found.")
+        print("   Updater signature might fail!")
     
     # Chạy lệnh build từ thư mục Frontend
-    run_command("npm run tauri build", cwd="Frontend")
+    # Lưu ý: os.environ đã được update ở trên sẽ tự động truyền vào subprocess
+    # Tuy nhiên explicit passing vẫn an toàn hơn
+    run_command("npm run tauri build", cwd="Frontend", env=os.environ)
 
 def generate_updater_json(version, notes):
     """Tạo file updater.json từ kết quả build."""
@@ -83,24 +103,21 @@ def generate_updater_json(version, notes):
     # Với Tauri v2 plugin updater: Cấu trúc json có thể khác.
     # Dưới đây là format chuẩn cho Tauri Updater.
 
-    # Tìm file cài đặt (.exe) hoặc compressed (.zip)
-    # Thường Tauri build ra: 
-    #   app_x.y.z_x64-setup.exe
-    #   app_x.y.z_x64-setup.nsis.zip
-    #   app_x.y.z_x64-setup.nsis.zip.sig
+    # Tìm file cài đặt (.exe) và file signature (.sig)
+    # Với config hiện tại, Tauri tạo ra ...-setup.exe và ...-setup.exe.sig
     
-    zip_file = None
+    installer_file = None
     sig_file = None
     
     for f in files:
-        if f.endswith(".nsis.zip"):
-            zip_file = f
-        elif f.endswith(".nsis.zip.sig"):
+        if f.endswith("-setup.exe") and f"_{version}_" in f:
+            installer_file = f
+        elif f.endswith("-setup.exe.sig") and f"_{version}_" in f:
             sig_file = f
             
-    if not zip_file or not sig_file:
-        print("❌ Could not find .nsis.zip or .sig file in bundle directory.")
-        print("   Did the build succeed? Did you set the private key environment variables?")
+    if not installer_file or not sig_file:
+        print("❌ Could not find ...-setup.exe or ...-setup.exe.sig file in bundle directory.")
+        print(f"   Files found: {files}")
         return
 
     # Đọc signature content
@@ -109,9 +126,8 @@ def generate_updater_json(version, notes):
         
     # Tạo URL download (Sửa lại theo repo của bạn)
     # Format: https://github.com/USERNAME/REPO/releases/download/vVERSION/FILENAME
-    # Repo user: QHanh, Repo: INS_Automation_Platform (giả định, cần user sửa nếu khác/private)
     repo_url = "https://github.com/QHanh/INS_Automation_Platform/releases/download"
-    download_url = f"{repo_url}/v{version}/{zip_file}"
+    download_url = f"{repo_url}/v{version}/{installer_file}"
     
     updater_data = {
         "version": f"v{version}",

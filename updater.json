@@ -1,0 +1,11 @@
+{
+  "version": "v0.1.1",
+  "notes": "First Version",
+  "pub_date": "2026-01-21T02:33:39Z",
+  "platforms": {
+    "windows-x86_64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTKzNLYVpPTTN4bHVkaTFtV2c2anZVR29FWThDM1JPY2lqTnppREg4ODRTVVV3Rk1nWlJ0TEVRaGFnT0k2WnkrT1lMYzVaVzQ2VG1NMjVJcElLQUtCcWFrZ0VjOHNqU0FjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY4OTYyODE5CWZpbGU6aW5zLWF1dG9tYXRpb24tcGxhdGZvcm1fMC4xLjFfeDY0LXNldHVwLmV4ZQpUNGJQUVRBNm14dWtIcmVWYkRhT3Y2MVEzUWpHcGwyRVB5d3JoREc1bnBjUnBYeTJOekJrL1ozanFsSWNCZXU3TCtMeDl1L3E3RTZGSjNSMnlTQjFBQT09Cg==",
+      "url": "https://github.com/QHanh/INS_Automation_Platform/releases/download/v0.1.1/ins-automation-platform_0.1.1_x64-setup.exe"
+    }
+  }
+}

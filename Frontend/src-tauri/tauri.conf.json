@@ -1,49 +1,49 @@
 {
-    "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-    "productName": "ins-automation-platform",
-    "version": "0.1.0",
-    "identifier": "com.ins.automationplatform",
-    "build": {
-        "frontendDist": "../dist",
-        "devUrl": "http://localhost:5173",
-        "beforeDevCommand": "npm run dev",
-        "beforeBuildCommand": "npm run build"
-    },
-    "app": {
-        "windows": [
-            {
-                "title": "Tool to the Moon",
-                "width": 500,
-                "height": 750,
-                "resizable": false,
-                "fullscreen": false
-            }
-        ],
-        "security": {
-            "csp": null
-        }
-    },
-    "bundle": {
-        "active": true,
-        "targets": "all",
-        "createUpdaterArtifacts": true,
-        "icon": [
-            "icons/32x32.png",
-            "icons/128x128.png",
-            "icons/128x128@2x.png",
-            "icons/icon.icns",
-            "icons/icon.ico"
-        ],
-        "externalBin": [
-            "binaries/backend"
-        ]
-    },
-    "plugins": {
-        "updater": {
-            "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDQyQkZDQzMyOEU4QzgxQkEKUldTNmdZeU9Nc3kvUXY5VGV6YzhlejlzcGduaHBnZjUxdlNLcFpEeWNBekU3YmRyWi92dXJKcHgK",
-            "endpoints": [
-                "https://github.com/QHanh/INS_Automation_Platform/releases/latest/download/latest.json"
-            ]
-        }
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "ins-automation-platform",
+  "version": "0.1.1",
+  "identifier": "com.ins.automationplatform",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:5173",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Tool to the Moon",
+        "width": 500,
+        "height": 750,
+        "resizable": false,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": null
     }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "createUpdaterArtifacts": true,
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "externalBin": [
+      "binaries/backend"
+    ]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEI2MDY4REE1QTE1ODRBNjkKUldTKzNLYVpPTTN4bGtkSTA3NnUvbi9VMEVubnFncnlBcXJZTTI1SFBXTlRIL25sZ2ZIaWxud3QK",
+      "endpoints": [
+        "https://github.com/QHanh/INS_Automation_Platform/releases/latest/download/latest.json"
+      ]
+    }
+  }
 }
