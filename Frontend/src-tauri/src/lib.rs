@@ -83,13 +83,10 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|app_handle, event| {
-            if let tauri::RunEvent::ExitRequested { .. } = event {
             // Listen for the Exit event (final teardown)
             if let tauri::RunEvent::ExitRequested { .. } = event {
-                let state = app_handle.state::<BackendProcess>();
-                let mutex = state.child.clone();
-                let lock_result = mutex.lock();
-                if let Ok(mut guard) = lock_result {
+                // Lock and take the child process directly from the managed state
+                if let Ok(mut guard) = app_handle.state::<BackendProcess>().child.lock() {
                     if let Some(mut child) = guard.take() {
                         let pid = child.id();
                         println!("Killing backend process tree with PID: {}", pid);
@@ -107,7 +104,6 @@ pub fn run() {
                          let _ = child.kill();
                     }
                 }
-            }
             }
         });
 }
