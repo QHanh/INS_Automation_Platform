@@ -3,6 +3,8 @@ import { Outlet } from 'react-router-dom';
 import { Moon, Sun } from 'lucide-react';
 import insIcon from '../assets/icon.png';
 
+import { getVersion } from '@tauri-apps/api/app';
+
 export default function Layout() {
   // Theme State
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -12,12 +14,28 @@ export default function Layout() {
     return 'dark';
   });
 
+  const [appVersion, setAppVersion] = useState<string>('');
+
   useEffect(() => {
     const root = window.document.documentElement;
     root.classList.remove('light', 'dark');
     root.classList.add(theme);
     localStorage.setItem('theme', theme);
   }, [theme]);
+
+  // Fetch App Version
+  useEffect(() => {
+    async function fetchVersion() {
+      try {
+        const version = await getVersion();
+        setAppVersion(`v${version}`);
+      } catch (e) {
+        console.error("Failed to get app version", e);
+        setAppVersion("v0.0.0"); // Fallback
+      }
+    }
+    fetchVersion();
+  }, []);
 
   const toggleTheme = () => {
     setTheme(prev => prev === 'dark' ? 'light' : 'dark');
@@ -46,9 +64,14 @@ export default function Layout() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-hidden">
+      <main className="flex-1 overflow-hidden relative">
         <Outlet />
       </main>
+
+      {/* Footer / Status Bar */}
+      <footer className="py-1 px-4 bg-bg-sidebar border-t border-border-color text-xs text-text-tertiary flex justify-end select-none">
+        <span>{appVersion}</span>
+      </footer>
     </div>
   );
 }
