@@ -1,11 +1,11 @@
 {
-  "version": "v0.1.4",
+  "version": "v0.1.5",
   "notes": "New",
-  "pub_date": "2026-01-21T04:09:34Z",
+  "pub_date": "2026-01-21T04:28:52Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTKzNLYVpPTTN4bGdSZW9Gb3M5bm90cXZqbUNkODVteFZMV2h4Vm1RekEybW53Zkw3WWVyL05kWGJieFU0TUR0Um5FNERwOFFla2V1T2V3WkpGM01UZ01GbUpITE9QTFFNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY4OTY4NTc0CWZpbGU6aW5zLWF1dG9tYXRpb24tcGxhdGZvcm1fMC4xLjRfeDY0LXNldHVwLmV4ZQpGanJSejdOY0syeUpyWElNYUJBaW9LNXpTdHhYejFuYW85NFpTa3RwRTRiMWpWcUdtZlJRSHJwdmtPZklvcXZqMjNDSWZ6RHpLdCs2WDVQeEYyNVJDQT09Cg==",
-      "url": "https://github.com/QHanh/INS_Automation_Platform/releases/download/v0.1.4/ins-automation-platform_0.1.4_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTKzNLYVpPTTN4bG9HM0N3N0ZlS1RFM2xxME9YNUc3VnBCL3E2cnJGT3JZRmN6SjZuOUpuZURpUXgwTk5SSnllY2JpNnNtS1BPd1YraTNLV3A4cjJPdnJ5ZEM3OGl3b3cwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY4OTY5NzMyCWZpbGU6aW5zLWF1dG9tYXRpb24tcGxhdGZvcm1fMC4xLjVfeDY0LXNldHVwLmV4ZQp5UC94cDgwM1lLOXlseDd6ZE9MZDJYTGJKSDM2ckFLQ2FaeEJRa3pxcXNYSHhLQlVLZFBoN0lSMVlwdlZvcC9WWWNVa0h0Mk85MXg1QkxmNzYvK3RCQT09Cg==",
+      "url": "https://github.com/QHanh/INS_Automation_Platform/releases/download/v0.1.5/ins-automation-platform_0.1.5_x64-setup.exe"
     }
   }
 }

@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "ins-automation-platform",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "identifier": "com.ins.automationplatform",
   "build": {
     "frontendDist": "../dist",
