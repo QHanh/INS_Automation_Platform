@@ -1,10 +1,10 @@
 {
   "version": "v0.1.9",
-  "notes": "Fix bug",
-  "pub_date": "2026-01-21T07:18:43Z",
+  "notes": "Fix check time license",
+  "pub_date": "2026-01-21T07:28:19Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTKzNLYVpPTTN4bHErbGpNODZqMVJOdmRHU3ltaUx5cUpsMDVxbkpSaGZjMDNiVVh6Q1FLM043N25UYmF2NlZlaVhCVnA0czNBRDlLTTZrdytQMjFwWmlhNDlEeXV5aVFJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY4OTc5OTIyCWZpbGU6aW5zLWF1dG9tYXRpb24tcGxhdGZvcm1fMC4xLjlfeDY0LXNldHVwLmV4ZQpCL0dLcFg1MHdyc2JxZVhHeXpxUEFoNHg5M3VYL0tBYzkvSGpzLytuTURCL0F0RWdMQUFTZFRSMGJxQSs4MEUxVzhOWjhqT1lzc0l1SDlZdDlxV0pDUT09Cg==",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTKzNLYVpPTTN4bHNXMVpPVVpDaDdwTWtVY1AzYXIzZDkzck1jVlV0NUp1QlBFNnNkd2dPOGpxTkNSR1RUOVhHaWl3YTk2eHJpeHg1elZvZXpHOWtuNG5JVjZvSDB6d2dFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzY4OTgwNDk5CWZpbGU6aW5zLWF1dG9tYXRpb24tcGxhdGZvcm1fMC4xLjlfeDY0LXNldHVwLmV4ZQp6M1JkQTdER3FRRitoSlI4YmdOeHFXVkxncEhnQTJYVEc2ejB2VmRUbXdwNEpaY24yaVM4eGdGa3BOZllMbXg3TWtHSitLSThrVG41WXJZQTk4TVhBUT09Cg==",
       "url": "https://github.com/QHanh/INS_Automation_Platform/releases/download/v0.1.9/ins-automation-platform_0.1.9_x64-setup.exe"
     }
   }
