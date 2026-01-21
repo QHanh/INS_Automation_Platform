@@ -69,8 +69,29 @@ export default function Layout() {
       </main>
 
       {/* Footer / Status Bar */}
-      <footer className="py-1 px-4 bg-bg-sidebar border-t border-border-color text-xs text-text-tertiary flex justify-center select-none opacity-50 hover:opacity-100 transition-opacity">
-        <span>Version {appVersion.replace('v', '')}</span>
+      <footer className="py-1 px-4 bg-bg-sidebar border-t border-border-color text-xs text-text-tertiary flex justify-center select-none opacity-50 hover:opacity-100 transition-opacity gap-4">
+        <span
+          onClick={async () => {
+            const { checkForUpdates } = await import('../services/UpdateService');
+            try {
+              alert('Checking for updates...');
+              const info = await checkForUpdates();
+              if (info.error) {
+                alert(`❌ Update Check Failed:\n${info.error}`);
+              } else if (info.appUpdateAvailable) {
+                alert(`✅ Update Available!\nNew Version: ${info.latestAppVersion}\nCurrent: ${info.currentAppVersion}\n\nPlease wait for the prompt.`);
+              } else {
+                alert(`✨ You are up to date.\nCurrent: ${info.currentAppVersion}\nLatest: ${info.latestAppVersion || 'Unknown'}`);
+              }
+            } catch (e) {
+              alert(`❌ Error: ${e}`);
+            }
+          }}
+          className="cursor-pointer hover:text-white hover:underline"
+          title="Click to check for updates"
+        >
+          Version {appVersion.replace('v', '')}
+        </span>
       </footer>
     </div>
   );

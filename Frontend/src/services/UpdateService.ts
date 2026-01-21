@@ -5,6 +5,7 @@
 
 import { check, Update } from '@tauri-apps/plugin-updater';
 import { relaunch } from '@tauri-apps/plugin-process';
+import { getVersion } from '@tauri-apps/api/app';
 
 // Backend API base URL
 const BACKEND_URL = 'http://localhost:8123';
@@ -19,6 +20,7 @@ export interface VersionInfo {
     backendUpdateAvailable: boolean;
     releaseNotes: string | null;
     releaseDate: string | null;
+    error?: string;
 }
 
 export interface BackendVersionResponse {
@@ -47,7 +49,7 @@ export async function getBackendVersion(): Promise<BackendVersionResponse | null
         return null;
     } catch (error) {
         console.error('Failed to get backend version:', error);
-        return null;
+        return null; // Return null on error, don't throw
     }
 }
 
@@ -99,45 +101,19 @@ export async function getLatestGitHubRelease(): Promise<{
  */
 export async function checkForAppUpdate(): Promise<Update | null> {
     try {
+        // Tauri's check() throws if signatures don't match or other errors occur
         const update = await check();
         cachedUpdate = update;
         return update;
     } catch (error) {
+        // If it throws, we want to catch it here ONLY if we want to suppress it.
+        // But for debugging, we want to propagate it. 
+        // However, existing code might expect null. 
+        // Let's log it and rethrow so checkForUpdates can match it.
         console.error('Failed to check for app updates:', error);
-        return null;
+        throw error;
     }
 }
-
-/**
- * Check for all updates (app + backend)
- */
-export async function checkForUpdates(): Promise<VersionInfo> {
-    const [backendVersion, appUpdate] = await Promise.all([
-        getBackendVersion(),
-        checkForAppUpdate()
-    ]);
-
-    // Get current app version from Tauri
-    const currentAppVersion = await getCurrentAppVersion();
-
-    return {
-        currentAppVersion,
-        currentBackendVersion: backendVersion?.backend_version || 'Unknown',
-        latestAppVersion: appUpdate?.version || null,
-        latestBackendVersion: null, // Will be populated from release notes
-        appUpdateAvailable: appUpdate !== null,
-        backendUpdateAvailable: false, // Custom logic can be added here
-        releaseNotes: appUpdate?.body || null,
-        releaseDate: appUpdate?.date || null
-    };
-}
-
-/**
- * Get current app version
- */
-import { getVersion } from '@tauri-apps/api/app';
-
-// ... (existing imports)
 
 /**
  * Get current app version
@@ -152,18 +128,64 @@ export async function getCurrentAppVersion(): Promise<string> {
 }
 
 /**
+ * Check for all updates (app + backend)
+ */
+export async function checkForUpdates(): Promise<VersionInfo> {
+    let appUpdate = null;
+    let backendVersion: BackendVersionResponse | null = null;
+    let errorMsg = undefined;
+
+    try {
+        // getBackendVersion doesn't throw, but checkForAppUpdate now throws on error
+        const [bv, update] = await Promise.all([
+            getBackendVersion(),
+            checkForAppUpdate().catch(e => {
+                // Capture error from checkForAppUpdate specifically
+                if (e instanceof Error) throw e;
+                throw new Error(String(e));
+            })
+        ]);
+        backendVersion = bv;
+        appUpdate = update;
+    } catch (err) {
+        console.error('Update check failed:', err);
+        errorMsg = err instanceof Error ? err.message : String(err);
+    }
+
+    // Get current app version from Tauri
+    const currentAppVersion = await getCurrentAppVersion();
+
+    return {
+        currentAppVersion,
+        currentBackendVersion: backendVersion?.backend_version || 'Unknown',
+        latestAppVersion: appUpdate?.version || null,
+        latestBackendVersion: null,
+        appUpdateAvailable: appUpdate !== null,
+        backendUpdateAvailable: false,
+        releaseNotes: appUpdate?.body || null,
+        releaseDate: appUpdate?.date || null,
+        error: errorMsg
+    };
+}
+
+/**
  * Download and install app update
  */
 export async function installAppUpdate(
     onProgress?: (progress: DownloadProgress) => void
 ): Promise<boolean> {
     if (!cachedUpdate) {
-        const update = await checkForAppUpdate();
-        if (!update) {
-            console.log('No update available');
+        try {
+            const update = await checkForAppUpdate();
+            if (!update) {
+                console.log('No update available');
+                return false;
+            }
+            cachedUpdate = update;
+        } catch (e) {
+            console.error('Cant install, check failed:', e);
             return false;
         }
-        cachedUpdate = update;
     }
 
     try {
