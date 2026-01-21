@@ -16,7 +16,7 @@ FILES = {
 
 # Đường dẫn build output của Tauri (trên Windows)
 TAURI_BUNDLE_DIR = os.path.join("Frontend", "src-tauri", "target", "release", "bundle", "nsis")
-UPDATER_JSON_PATH = "updater.json"
+UPDATER_JSON_PATH = "latest.json"
 
 def run_command(command, cwd=None, env=None):
     """Chạy lệnh shell và in ra output."""
